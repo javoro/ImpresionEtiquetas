@@ -1,0 +1,45 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+# Rider / ReSharper
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+# NuGet packages (packages.config style)
+packages/
+*.nupkg
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.cache
+*.pidb
+*.svclog
+
+# Test and coverage
+TestResults/
+*.coverage
+*.coveragexml
+
+# Publish and installer outputs
+publish/
+
+# OS files
+Thumbs.db
+Desktop.ini
