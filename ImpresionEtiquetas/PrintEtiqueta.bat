@@ -1,1 +1,1 @@
-COPY /B "C:\Etiquetadora\Etiquetas.txt" \\localhost\ZDesigner
+COPY /B %~1 \\localhost\ZDesigner

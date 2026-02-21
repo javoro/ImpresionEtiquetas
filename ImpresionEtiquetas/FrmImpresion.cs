@@ -18,6 +18,7 @@ namespace ImpresionEtiquetas
     public partial class frmImprimir : Form
     {
         private readonly string pathRoot = AppDomain.CurrentDomain.BaseDirectory;
+        private readonly string pathSalida;
         private readonly string urlPlantilla;
         private readonly string fileEtiquetas = "Etiquetas.txt";
         private readonly string urlBAT;
@@ -33,6 +34,15 @@ namespace ImpresionEtiquetas
             InitializeComponent();
             urlPlantilla = Path.Combine(pathRoot, "Plantilla.txt");
             urlBAT = Path.Combine(pathRoot, "PrintEtiqueta.bat");
+
+            pathSalida = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ImpresionEtiquetas");
+
+            if (!Directory.Exists(pathSalida))
+            {
+                Directory.CreateDirectory(pathSalida);
+            }
         }
 
         private void frmImprimir_Load(object sender, EventArgs e)
@@ -183,12 +193,12 @@ namespace ImpresionEtiquetas
                     }
                 }
 
-                if (!Directory.Exists(pathRoot))
+                if (!Directory.Exists(pathSalida))
                 {
-                    Directory.CreateDirectory(pathRoot);
+                    Directory.CreateDirectory(pathSalida);
                 }
 
-                string rutaEtiquetas = Path.Combine(pathRoot, fileEtiquetas);
+                string rutaEtiquetas = Path.Combine(pathSalida, fileEtiquetas);
                 if (File.Exists(rutaEtiquetas))
                 {
                     File.Delete(rutaEtiquetas);
@@ -209,8 +219,11 @@ namespace ImpresionEtiquetas
         {
             try
             {
+                string rutaEtiquetas = Path.Combine(pathSalida, fileEtiquetas);
+
                 Process process = new Process();
                 process.StartInfo.FileName = urlBAT;
+                process.StartInfo.Arguments = "\"" + rutaEtiquetas + "\"";
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
 
@@ -328,7 +341,7 @@ namespace ImpresionEtiquetas
         {
             try
             {
-                string rutaEtiquetas = Path.Combine(pathRoot, fileEtiquetas);
+                string rutaEtiquetas = Path.Combine(pathSalida, fileEtiquetas);
                 if (!File.Exists(rutaEtiquetas))
                 {
                     MessageBox.Show("No se encontraron etiquetas generadas. Por favor, genere las etiquetas antes de intentar imprimir.",
