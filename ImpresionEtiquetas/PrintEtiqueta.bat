@@ -1,0 +1,1 @@
+COPY /B "C:\Etiquetadora\Etiquetas.txt" \\localhost\ZDesigner

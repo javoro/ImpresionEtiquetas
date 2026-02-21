@@ -137,6 +137,15 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Image\print.ico" />
+    <Content Include="Plantilla.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="PrintEtiqueta.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Plantilla.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="print.ico" />
   </ItemGroup>
   <ItemGroup>

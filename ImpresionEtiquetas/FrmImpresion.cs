@@ -17,10 +17,11 @@ namespace ImpresionEtiquetas
 {
     public partial class frmImprimir : Form
     {
-        private string urlPlantilla = @"C:\Etiquetadora\Plantilla.txt";
-        private string fileEtiquetas = "Etiquetas.txt";
-        private string urlBAT = @"C:\Etiquetadora\PrintEtiqueta.bat";
-        private string pathRoot = @"C:\Etiquetadora\";
+        private readonly string pathRoot = AppDomain.CurrentDomain.BaseDirectory;
+        private readonly string urlPlantilla;
+        private readonly string fileEtiquetas = "Etiquetas.txt";
+        private readonly string urlBAT;
+        private readonly string urlPlantillaExcel = "Plantilla.xlsx";
         private int? filaEnEdicion = null;
         private Dictionary<string, object> valoresOriginalesFila = new Dictionary<string, object>();
         private const string ColAccionPrincipal = "AccionPrincipal";
@@ -30,6 +31,8 @@ namespace ImpresionEtiquetas
         public frmImprimir()
         {
             InitializeComponent();
+            urlPlantilla = Path.Combine(pathRoot, "Plantilla.txt");
+            urlBAT = Path.Combine(pathRoot, "PrintEtiqueta.bat");
         }
 
         private void frmImprimir_Load(object sender, EventArgs e)
@@ -38,9 +41,13 @@ namespace ImpresionEtiquetas
             dgvDatos.AllowUserToOrderColumns = false;
             dgvDatos.ReadOnly = false;
             this.WindowState = FormWindowState.Maximized;
-            txtEmpresa.Text = "VISUALIZA+";
+            txtEmpresa.CharacterCasing = CharacterCasing.Upper;
+            txtEmpresa.Text = TextoMayusculas("VISUALIZA+");
             ConfigurarGridAcciones();
             ConfigurarModo();
+            txtPrecioManual.KeyPress += TxtPrecioManual_KeyPress;
+            txtCantidadManual.KeyPress += TxtCantidadManual_KeyPress;
+            dgvDatos.EditingControlShowing += dgvDatos_EditingControlShowing;
         }
 
         private void btnImportar_Click(object sender, EventArgs e)
@@ -78,7 +85,10 @@ namespace ImpresionEtiquetas
                                 continue;
                             }
 
-                            int indiceFila = dgvDatos.Rows.Add(row["Marca"], row["Modelo"], row["Precio"], row["Cantidad"]);
+                            string marca = TextoMayusculas(row["Marca"]?.ToString());
+                            string modelo = TextoMayusculas(row["Modelo"]?.ToString());
+                            string sku = TextoMayusculas(row["Sku"]?.ToString());
+                            int indiceFila = dgvDatos.Rows.Add(marca, modelo, sku, row["Precio"], row["Cantidad"]);
                             EstablecerModoNormalFila(indiceFila);
                             filasCargadas++;
                         }
@@ -136,7 +146,6 @@ namespace ImpresionEtiquetas
 
                 string plantilla = File.ReadAllText(urlPlantilla);
                 string empresa = LimpiarTextoZpl(txtEmpresa.Text);
-                string sku = LimpiarTextoZpl(txtSku.Text);
 
                 StringBuilder zplBuilder = new StringBuilder();
                 foreach (DataGridViewRow row in dgvDatos.Rows)
@@ -154,8 +163,10 @@ namespace ImpresionEtiquetas
                         {
                             modelo = modelo.Substring(0, 12);
                         }
+
+                        string sku = LimpiarTextoZpl(row.Cells["Sku"].Value?.ToString());
                         // Formatear el precio como moneda
-                        if (!decimal.TryParse(row.Cells["Precio"].Value?.ToString(), out decimal precioDecimal))
+                        if (!TryParsePrecio(row.Cells["Precio"].Value?.ToString(), out decimal precioDecimal))
                         {
                             MessageBox.Show("Error al convertir el precio a un formato válido.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return;
@@ -225,6 +236,7 @@ namespace ImpresionEtiquetas
 
                 dt.Columns.Add("Marca");
                 dt.Columns.Add("Modelo");
+                dt.Columns.Add("Sku");
                 dt.Columns.Add("Precio");
                 dt.Columns.Add("Cantidad");
 
@@ -246,16 +258,27 @@ namespace ImpresionEtiquetas
                 {
                     string marca = LeerCelda(ws, rowNum, mapaColumnas["Marca"]);
                     string modelo = LeerCelda(ws, rowNum, mapaColumnas["Modelo"]);
+                    string sku = LeerCelda(ws, rowNum, mapaColumnas["Sku"]);
                     string precio = LeerCelda(ws, rowNum, mapaColumnas["Precio"]);
                     string cantidad = LeerCelda(ws, rowNum, mapaColumnas["Cantidad"]);
 
+                    if (!string.IsNullOrWhiteSpace(precio) && TryParsePrecio(precio, out decimal precioDecimal))
+                    {
+                        precio = precioDecimal.ToString("0.00", CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        precio = string.Empty;
+                    }
+
                     if (string.IsNullOrWhiteSpace(marca) && string.IsNullOrWhiteSpace(modelo) &&
-                        string.IsNullOrWhiteSpace(precio) && string.IsNullOrWhiteSpace(cantidad))
+                        string.IsNullOrWhiteSpace(precio) && string.IsNullOrWhiteSpace(cantidad) &&
+                        string.IsNullOrWhiteSpace(sku))
                     {
                         continue;
                     }
 
-                    dt.Rows.Add(marca, modelo, precio, cantidad);
+                    dt.Rows.Add(marca, modelo, sku, precio, cantidad);
                 }
                 return dt;
             }
@@ -280,7 +303,7 @@ namespace ImpresionEtiquetas
                     return false;
                 }
 
-                if (!decimal.TryParse(precio, out _))
+                if (!TryParsePrecio(precio, out _))
                 {
                     row.Selected = true;
                     return false;
@@ -358,12 +381,12 @@ namespace ImpresionEtiquetas
 
         private void btnAgregarFila_Click(object sender, EventArgs e)
         {
-            if (!ValidarCamposManual(out string marca, out string modelo, out string precioTexto, out int cantidad))
+            if (!ValidarCamposManual(out string marca, out string modelo, out string sku, out string precioTexto, out int cantidad))
             {
                 return;
             }
 
-            dgvDatos.Rows.Add(marca, modelo, precioTexto, cantidad);
+            dgvDatos.Rows.Add(TextoMayusculas(marca), TextoMayusculas(modelo), TextoMayusculas(sku), precioTexto, cantidad);
             EstablecerModoNormalFila(dgvDatos.Rows.Count - 1);
             LimpiarCamposManual();
             txtMarcaManual.Focus();
@@ -377,14 +400,15 @@ namespace ImpresionEtiquetas
                 return;
             }
 
-            if (!ValidarCamposManual(out string marca, out string modelo, out string precioTexto, out int cantidad))
+            if (!ValidarCamposManual(out string marca, out string modelo, out string sku, out string precioTexto, out int cantidad))
             {
                 return;
             }
 
             DataGridViewRow row = dgvDatos.SelectedRows[0];
-            row.Cells["Marca"].Value = marca;
-            row.Cells["Modelo"].Value = modelo;
+            row.Cells["Marca"].Value = TextoMayusculas(marca);
+            row.Cells["Modelo"].Value = TextoMayusculas(modelo);
+            row.Cells["Sku"].Value = TextoMayusculas(sku);
             row.Cells["Precio"].Value = precioTexto;
             row.Cells["Cantidad"].Value = cantidad;
             LimpiarCamposManual();
@@ -419,6 +443,7 @@ namespace ImpresionEtiquetas
             DataGridViewRow row = dgvDatos.SelectedRows[0];
             txtMarcaManual.Text = row.Cells["Marca"].Value?.ToString() ?? string.Empty;
             txtModeloManual.Text = row.Cells["Modelo"].Value?.ToString() ?? string.Empty;
+            txtSkuManual.Text = row.Cells["Sku"].Value?.ToString() ?? string.Empty;
             txtPrecioManual.Text = row.Cells["Precio"].Value?.ToString() ?? string.Empty;
             txtCantidadManual.Text = row.Cells["Cantidad"].Value?.ToString() ?? string.Empty;
         }
@@ -428,6 +453,7 @@ namespace ImpresionEtiquetas
             bool valido = true;
             errorProvider1.Clear();
 
+            txtEmpresa.Text = TextoMayusculas(txtEmpresa.Text);
             if (string.IsNullOrWhiteSpace(txtEmpresa.Text))
             {
                 errorProvider1.SetError(txtEmpresa, "Ingrese el nombre de la empresa.");
@@ -439,39 +465,31 @@ namespace ImpresionEtiquetas
                 txtEmpresa.BackColor = Color.White;
             }
 
-            if (string.IsNullOrWhiteSpace(txtSku.Text))
-            {
-                errorProvider1.SetError(txtSku, "Ingrese el número SKU.");
-                txtSku.BackColor = Color.MistyRose;
-                valido = false;
-            }
-            else
-            {
-                txtSku.BackColor = Color.White;
-            }
-
             if (!valido)
             {
-                MessageBox.Show("Complete los datos obligatorios de empresa y SKU.", "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Complete los datos obligatorios de empresa.", "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
             return valido;
         }
 
-        private bool ValidarCamposManual(out string marca, out string modelo, out string precioTexto, out int cantidad)
+        private bool ValidarCamposManual(out string marca, out string modelo, out string sku, out string precioTexto, out int cantidad)
         {
             marca = txtMarcaManual.Text.Trim();
             modelo = txtModeloManual.Text.Trim();
+            sku = txtSkuManual.Text.Trim();
             precioTexto = txtPrecioManual.Text.Trim();
             cantidad = 0;
 
             errorProvider1.SetError(txtMarcaManual, string.Empty);
             errorProvider1.SetError(txtModeloManual, string.Empty);
+            errorProvider1.SetError(txtSkuManual, string.Empty);
             errorProvider1.SetError(txtPrecioManual, string.Empty);
             errorProvider1.SetError(txtCantidadManual, string.Empty);
 
             txtMarcaManual.BackColor = Color.White;
             txtModeloManual.BackColor = Color.White;
+            txtSkuManual.BackColor = Color.White;
             txtPrecioManual.BackColor = Color.White;
             txtCantidadManual.BackColor = Color.White;
 
@@ -491,7 +509,14 @@ namespace ImpresionEtiquetas
                 valido = false;
             }
 
-            if (!decimal.TryParse(precioTexto, out decimal precio) || precio < 0)
+            if (string.IsNullOrWhiteSpace(sku))
+            {
+                errorProvider1.SetError(txtSkuManual, "Ingrese el SKU.");
+                txtSkuManual.BackColor = Color.MistyRose;
+                valido = false;
+            }
+
+            if (!TryParsePrecio(precioTexto, out decimal precio) || precio < 0)
             {
                 errorProvider1.SetError(txtPrecioManual, "Ingrese un precio válido.");
                 txtPrecioManual.BackColor = Color.MistyRose;
@@ -499,7 +524,7 @@ namespace ImpresionEtiquetas
             }
             else
             {
-                precioTexto = precio.ToString("0.00");
+                precioTexto = precio.ToString("0.00", CultureInfo.InvariantCulture);
             }
 
             if (!int.TryParse(txtCantidadManual.Text.Trim(), out cantidad) || cantidad < 1)
@@ -521,11 +546,13 @@ namespace ImpresionEtiquetas
         {
             txtMarcaManual.Text = string.Empty;
             txtModeloManual.Text = string.Empty;
+            txtSkuManual.Text = string.Empty;
             txtPrecioManual.Text = string.Empty;
             txtCantidadManual.Text = string.Empty;
 
             txtMarcaManual.BackColor = Color.White;
             txtModeloManual.BackColor = Color.White;
+            txtSkuManual.BackColor = Color.White;
             txtPrecioManual.BackColor = Color.White;
             txtCantidadManual.BackColor = Color.White;
         }
@@ -572,6 +599,7 @@ namespace ImpresionEtiquetas
         {
             Marca.ReadOnly = true;
             Modelo.ReadOnly = true;
+            Sku.ReadOnly = true;
             Precio.ReadOnly = true;
             Cantidad.ReadOnly = true;
 
@@ -675,6 +703,7 @@ namespace ImpresionEtiquetas
             DataGridViewRow row = dgvDatos.Rows[rowIndex];
             row.Cells["Marca"].ReadOnly = false;
             row.Cells["Modelo"].ReadOnly = false;
+            row.Cells["Sku"].ReadOnly = false;
             row.Cells["Precio"].ReadOnly = false;
             row.Cells["Cantidad"].ReadOnly = false;
 
@@ -745,6 +774,7 @@ namespace ImpresionEtiquetas
 
             row.Cells["Marca"].ReadOnly = true;
             row.Cells["Modelo"].ReadOnly = true;
+            row.Cells["Sku"].ReadOnly = true;
             row.Cells["Precio"].ReadOnly = true;
             row.Cells["Cantidad"].ReadOnly = true;
 
@@ -804,6 +834,7 @@ namespace ImpresionEtiquetas
             {
                 ["Marca"] = row.Cells["Marca"].Value,
                 ["Modelo"] = row.Cells["Modelo"].Value,
+                ["Sku"] = row.Cells["Sku"].Value,
                 ["Precio"] = row.Cells["Precio"].Value,
                 ["Cantidad"] = row.Cells["Cantidad"].Value
             };
@@ -818,6 +849,7 @@ namespace ImpresionEtiquetas
 
             row.Cells["Marca"].Value = valoresOriginalesFila["Marca"];
             row.Cells["Modelo"].Value = valoresOriginalesFila["Modelo"];
+            row.Cells["Sku"].Value = valoresOriginalesFila["Sku"];
             row.Cells["Precio"].Value = valoresOriginalesFila["Precio"];
             row.Cells["Cantidad"].Value = valoresOriginalesFila["Cantidad"];
         }
@@ -829,17 +861,19 @@ namespace ImpresionEtiquetas
 
             string marca = row.Cells["Marca"].Value?.ToString();
             string modelo = row.Cells["Modelo"].Value?.ToString();
+            string sku = row.Cells["Sku"].Value?.ToString();
             string precio = row.Cells["Precio"].Value?.ToString();
             string cantidad = row.Cells["Cantidad"].Value?.ToString();
 
             if (string.IsNullOrWhiteSpace(marca) || string.IsNullOrWhiteSpace(modelo) ||
-                string.IsNullOrWhiteSpace(precio) || string.IsNullOrWhiteSpace(cantidad))
+                string.IsNullOrWhiteSpace(precio) || string.IsNullOrWhiteSpace(cantidad) ||
+                string.IsNullOrWhiteSpace(sku))
             {
                 mensaje = "Todos los campos de la fila son obligatorios para guardar los cambios.";
                 return false;
             }
 
-            if (!decimal.TryParse(precio, out decimal precioDecimal) || precioDecimal < 0)
+            if (!TryParsePrecio(precio, out decimal precioDecimal) || precioDecimal < 0)
             {
                 mensaje = "El precio de la fila debe ser un número válido mayor o igual a cero.";
                 return false;
@@ -851,7 +885,10 @@ namespace ImpresionEtiquetas
                 return false;
             }
 
-            row.Cells["Precio"].Value = precioDecimal.ToString("0.00");
+            row.Cells["Marca"].Value = TextoMayusculas(marca);
+            row.Cells["Modelo"].Value = TextoMayusculas(modelo);
+            row.Cells["Sku"].Value = TextoMayusculas(sku);
+            row.Cells["Precio"].Value = precioDecimal.ToString("0.00", CultureInfo.InvariantCulture);
             row.Cells["Cantidad"].Value = cantidadInt;
 
             return true;
@@ -883,6 +920,7 @@ namespace ImpresionEtiquetas
             DataGridViewRow row = dgvDatos.Rows[rowIndex];
             row.Cells["Marca"].ReadOnly = true;
             row.Cells["Modelo"].ReadOnly = true;
+            row.Cells["Sku"].ReadOnly = true;
             row.Cells["Precio"].ReadOnly = true;
             row.Cells["Cantidad"].ReadOnly = true;
             row.Cells[ColAccionPrincipal].Value = "✎ Editar";
@@ -931,6 +969,80 @@ namespace ImpresionEtiquetas
             return (valor ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
         }
 
+        private static string TextoMayusculas(string valor)
+        {
+            return string.IsNullOrWhiteSpace(valor) ? string.Empty : valor.Trim().ToUpperInvariant();
+        }
+
+        private static bool TryParsePrecio(string valor, out decimal precio)
+        {
+            precio = 0m;
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return false;
+            }
+
+            string normalizado = valor.Trim().Replace(',', '.');
+            return decimal.TryParse(normalizado, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out precio);
+        }
+
+        private void TxtPrecioManual_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar))
+            {
+                return;
+            }
+
+            TextBox textBox = sender as TextBox;
+            if (e.KeyChar == '.')
+            {
+                if (textBox != null && textBox.Text.Contains("."))
+                {
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            if (!char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void TxtCantidadManual_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar))
+            {
+                return;
+            }
+
+            if (!char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void dgvDatos_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
+        {
+            if (!(e.Control is TextBox textBox))
+            {
+                return;
+            }
+
+            textBox.KeyPress -= TxtPrecioManual_KeyPress;
+            textBox.KeyPress -= TxtCantidadManual_KeyPress;
+
+            string nombreColumna = dgvDatos.CurrentCell?.OwningColumn?.Name;
+            if (string.Equals(nombreColumna, "Precio", StringComparison.OrdinalIgnoreCase))
+            {
+                textBox.KeyPress += TxtPrecioManual_KeyPress;
+            }
+            else if (string.Equals(nombreColumna, "Cantidad", StringComparison.OrdinalIgnoreCase))
+            {
+                textBox.KeyPress += TxtCantidadManual_KeyPress;
+            }
+        }
+
         private Dictionary<string, int> ObtenerMapaColumnasExcel(ExcelWorksheet ws, out bool usaEncabezados)
         {
             Dictionary<string, int> mapa = new Dictionary<string, int>();
@@ -955,6 +1067,11 @@ namespace ImpresionEtiquetas
                     mapa["Modelo"] = col;
                     coincidencias++;
                 }
+                else if (!mapa.ContainsKey("Sku") && (encabezado == "sku" || encabezado == "codigo" || encabezado == "código" || encabezado == "codigosku" || encabezado == "codsku"))
+                {
+                    mapa["Sku"] = col;
+                    coincidencias++;
+                }
                 else if (!mapa.ContainsKey("Precio") && (encabezado == "precio" || encabezado == "precioventa" || encabezado == "preciopublico" || encabezado == "precio público"))
                 {
                     mapa["Precio"] = col;
@@ -971,8 +1088,9 @@ namespace ImpresionEtiquetas
 
             if (!mapa.ContainsKey("Marca")) mapa["Marca"] = 1;
             if (!mapa.ContainsKey("Modelo")) mapa["Modelo"] = 2;
-            if (!mapa.ContainsKey("Precio")) mapa["Precio"] = 3;
-            if (!mapa.ContainsKey("Cantidad")) mapa["Cantidad"] = 4;
+            if (!mapa.ContainsKey("Sku")) mapa["Sku"] = 3;
+            if (!mapa.ContainsKey("Precio")) mapa["Precio"] = 4;
+            if (!mapa.ContainsKey("Cantidad")) mapa["Cantidad"] = 5;
 
             return mapa;
         }

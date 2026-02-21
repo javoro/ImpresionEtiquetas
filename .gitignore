@@ -39,6 +39,7 @@ TestResults/
 
 # Publish and installer outputs
 publish/
+Installer/Output/
 
 # OS files
 Thumbs.db

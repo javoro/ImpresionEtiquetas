@@ -33,8 +33,6 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmImprimir));
             this.grpEmpresa = new System.Windows.Forms.GroupBox();
-            this.lblSku = new System.Windows.Forms.Label();
-            this.txtSku = new System.Windows.Forms.TextBox();
             this.lblEmpresa = new System.Windows.Forms.Label();
             this.txtEmpresa = new System.Windows.Forms.TextBox();
             this.grpModo = new System.Windows.Forms.GroupBox();
@@ -49,6 +47,8 @@
             this.txtCantidadManual = new System.Windows.Forms.TextBox();
             this.lblPrecioManual = new System.Windows.Forms.Label();
             this.txtPrecioManual = new System.Windows.Forms.TextBox();
+            this.lblSkuManual = new System.Windows.Forms.Label();
+            this.txtSkuManual = new System.Windows.Forms.TextBox();
             this.lblModeloManual = new System.Windows.Forms.Label();
             this.txtModeloManual = new System.Windows.Forms.TextBox();
             this.lblMarcaManual = new System.Windows.Forms.Label();
@@ -56,6 +56,7 @@
             this.dgvDatos = new System.Windows.Forms.DataGridView();
             this.Marca = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Modelo = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Sku = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Precio = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Cantidad = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.AccionPrincipal = new System.Windows.Forms.DataGridViewButtonColumn();
@@ -75,8 +76,6 @@
             // 
             this.grpEmpresa.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpEmpresa.Controls.Add(this.lblSku);
-            this.grpEmpresa.Controls.Add(this.txtSku);
             this.grpEmpresa.Controls.Add(this.lblEmpresa);
             this.grpEmpresa.Controls.Add(this.txtEmpresa);
             this.grpEmpresa.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -88,25 +87,6 @@
             this.grpEmpresa.TabIndex = 0;
             this.grpEmpresa.TabStop = false;
             this.grpEmpresa.Text = "Información de etiqueta";
-            // 
-            // lblSku
-            // 
-            this.lblSku.AutoSize = true;
-            this.lblSku.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblSku.Location = new System.Drawing.Point(740, 38);
-            this.lblSku.Name = "lblSku";
-            this.lblSku.Size = new System.Drawing.Size(95, 16);
-            this.lblSku.TabIndex = 2;
-            this.lblSku.Text = "Número SKU:";
-            // 
-            // txtSku
-            // 
-            this.txtSku.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtSku.Location = new System.Drawing.Point(842, 35);
-            this.txtSku.MaxLength = 60;
-            this.txtSku.Name = "txtSku";
-            this.txtSku.Size = new System.Drawing.Size(370, 22);
-            this.txtSku.TabIndex = 3;
             // 
             // lblEmpresa
             // 
@@ -120,11 +100,13 @@
             // 
             // txtEmpresa
             // 
+            this.txtEmpresa.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.txtEmpresa.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtEmpresa.Location = new System.Drawing.Point(156, 35);
             this.txtEmpresa.MaxLength = 80;
             this.txtEmpresa.Name = "txtEmpresa";
-            this.txtEmpresa.Size = new System.Drawing.Size(560, 22);
+            this.txtEmpresa.Size = new System.Drawing.Size(1056, 22);
             this.txtEmpresa.TabIndex = 1;
             // 
             // grpModo
@@ -193,6 +175,8 @@
             this.grpManual.Controls.Add(this.txtCantidadManual);
             this.grpManual.Controls.Add(this.lblPrecioManual);
             this.grpManual.Controls.Add(this.txtPrecioManual);
+            this.grpManual.Controls.Add(this.lblSkuManual);
+            this.grpManual.Controls.Add(this.txtSkuManual);
             this.grpManual.Controls.Add(this.lblModeloManual);
             this.grpManual.Controls.Add(this.txtModeloManual);
             this.grpManual.Controls.Add(this.lblMarcaManual);
@@ -246,7 +230,7 @@
             // 
             this.lblCantidadManual.AutoSize = true;
             this.lblCantidadManual.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblCantidadManual.Location = new System.Drawing.Point(717, 25);
+            this.lblCantidadManual.Location = new System.Drawing.Point(939, 25);
             this.lblCantidadManual.Name = "lblCantidadManual";
             this.lblCantidadManual.Size = new System.Drawing.Size(64, 16);
             this.lblCantidadManual.TabIndex = 6;
@@ -255,7 +239,7 @@
             // txtCantidadManual
             // 
             this.txtCantidadManual.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtCantidadManual.Location = new System.Drawing.Point(720, 44);
+            this.txtCantidadManual.Location = new System.Drawing.Point(942, 44);
             this.txtCantidadManual.MaxLength = 3;
             this.txtCantidadManual.Name = "txtCantidadManual";
             this.txtCantidadManual.Size = new System.Drawing.Size(170, 22);
@@ -265,7 +249,7 @@
             // 
             this.lblPrecioManual.AutoSize = true;
             this.lblPrecioManual.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblPrecioManual.Location = new System.Drawing.Point(499, 25);
+            this.lblPrecioManual.Location = new System.Drawing.Point(717, 25);
             this.lblPrecioManual.Name = "lblPrecioManual";
             this.lblPrecioManual.Size = new System.Drawing.Size(50, 16);
             this.lblPrecioManual.TabIndex = 4;
@@ -274,11 +258,30 @@
             // txtPrecioManual
             // 
             this.txtPrecioManual.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtPrecioManual.Location = new System.Drawing.Point(502, 44);
+            this.txtPrecioManual.Location = new System.Drawing.Point(720, 44);
             this.txtPrecioManual.MaxLength = 20;
             this.txtPrecioManual.Name = "txtPrecioManual";
             this.txtPrecioManual.Size = new System.Drawing.Size(200, 22);
-            this.txtPrecioManual.TabIndex = 5;
+            this.txtPrecioManual.TabIndex = 6;
+            // 
+            // lblSkuManual
+            // 
+            this.lblSkuManual.AutoSize = true;
+            this.lblSkuManual.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblSkuManual.Location = new System.Drawing.Point(499, 25);
+            this.lblSkuManual.Name = "lblSkuManual";
+            this.lblSkuManual.Size = new System.Drawing.Size(33, 16);
+            this.lblSkuManual.TabIndex = 4;
+            this.lblSkuManual.Text = "SKU";
+            // 
+            // txtSkuManual
+            // 
+            this.txtSkuManual.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtSkuManual.Location = new System.Drawing.Point(502, 44);
+            this.txtSkuManual.MaxLength = 60;
+            this.txtSkuManual.Name = "txtSkuManual";
+            this.txtSkuManual.Size = new System.Drawing.Size(200, 22);
+            this.txtSkuManual.TabIndex = 5;
             // 
             // lblModeloManual
             // 
@@ -341,6 +344,7 @@
             this.dgvDatos.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Marca,
             this.Modelo,
+            this.Sku,
             this.Precio,
             this.Cantidad,
             this.AccionPrincipal,
@@ -372,6 +376,13 @@
             this.Modelo.Name = "Modelo";
             this.Modelo.ReadOnly = true;
             this.Modelo.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
+            // 
+            // Sku
+            // 
+            this.Sku.HeaderText = "SKU";
+            this.Sku.Name = "Sku";
+            this.Sku.ReadOnly = true;
+            this.Sku.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
             // 
             // Precio
             // 
@@ -492,8 +503,6 @@
         #endregion
 
         private System.Windows.Forms.GroupBox grpEmpresa;
-        private System.Windows.Forms.Label lblSku;
-        private System.Windows.Forms.TextBox txtSku;
         private System.Windows.Forms.Label lblEmpresa;
         private System.Windows.Forms.TextBox txtEmpresa;
         private System.Windows.Forms.GroupBox grpModo;
@@ -508,6 +517,8 @@
         private System.Windows.Forms.TextBox txtCantidadManual;
         private System.Windows.Forms.Label lblPrecioManual;
         private System.Windows.Forms.TextBox txtPrecioManual;
+        private System.Windows.Forms.Label lblSkuManual;
+        private System.Windows.Forms.TextBox txtSkuManual;
         private System.Windows.Forms.Label lblModeloManual;
         private System.Windows.Forms.TextBox txtModeloManual;
         private System.Windows.Forms.Label lblMarcaManual;
@@ -517,6 +528,7 @@
         private System.Windows.Forms.Button btnBorrar;
         private System.Windows.Forms.DataGridViewTextBoxColumn Marca;
         private System.Windows.Forms.DataGridViewTextBoxColumn Modelo;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Sku;
         private System.Windows.Forms.DataGridViewTextBoxColumn Precio;
         private System.Windows.Forms.DataGridViewTextBoxColumn Cantidad;
         private System.Windows.Forms.DataGridViewButtonColumn AccionPrincipal;
