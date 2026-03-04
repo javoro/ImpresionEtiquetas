@@ -1,6 +1,7 @@
 ﻿using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -28,6 +29,11 @@ namespace ImpresionEtiquetas
         private const string ColAccionPrincipal = "AccionPrincipal";
         private const string ColAccionSecundaria = "AccionSecundaria";
         private readonly Color colorFilaEditando = Color.FromArgb(255, 248, 220);
+
+        // Longitudes máximas activas (se actualizan al guardar la configuración)
+        private int maxLongitudMarca;
+        private int maxLongitudModelo;
+        private int maxLongitudSku;
 
         public frmImprimir()
         {
@@ -58,7 +64,191 @@ namespace ImpresionEtiquetas
             txtPrecioManual.KeyPress += TxtPrecioManual_KeyPress;
             txtCantidadManual.KeyPress += TxtCantidadManual_KeyPress;
             dgvDatos.EditingControlShowing += dgvDatos_EditingControlShowing;
+
+            // Cargar configuración de longitudes desde App.config y reflejarla en pantalla
+            CargarConfigLongitudEnPantalla();
+
+            // Verificar actualizaciones en segundo plano
+            Task.Run(() => UpdateChecker.CheckForUpdates());
         }
+
+        // ─── Configuración de longitudes ────────────────────────────────────────────
+
+        /// <summary>
+        /// Lee los valores de App.config, los muestra en los NumericUpDown
+        /// y los aplica en las variables de trabajo.
+        /// </summary>
+        private void CargarConfigLongitudEnPantalla()
+        {
+            maxLongitudMarca  = LeerLongitudConfig("MaxLongitudMarca",  defaultValue: 16);
+            maxLongitudModelo = LeerLongitudConfig("MaxLongitudModelo", defaultValue: 12);
+            maxLongitudSku    = LeerLongitudConfig("MaxLongitudSku",    defaultValue: 20);
+
+            nudConfigMarca.Value  = maxLongitudMarca;
+            nudConfigModelo.Value = maxLongitudModelo;
+            nudConfigSku.Value    = maxLongitudSku;
+
+            // Asegurar estado inicial deshabilitado
+            nudConfigMarca.Enabled  = false;
+            nudConfigModelo.Enabled = false;
+            nudConfigSku.Enabled    = false;
+            btnGuardarConfig.Enabled = false;
+            chkEditarConfig.Checked  = false;
+            chkEditarConfig.Text = "✎ Editar";
+        }
+
+        /// <summary>
+        /// Habilita o deshabilita los campos de configuración según el estado del checkbox.
+        /// </summary>
+        private void chkEditarConfig_CheckedChanged(object sender, EventArgs e)
+        {
+            bool editando = chkEditarConfig.Checked;
+
+            nudConfigMarca.Enabled   = editando;
+            nudConfigModelo.Enabled  = editando;
+            nudConfigSku.Enabled     = editando;
+            btnGuardarConfig.Enabled = editando;
+
+            chkEditarConfig.Text = editando ? "✖ Cancelar" : "✎ Editar";
+
+            if (!editando)
+            {
+                // Al cancelar, restaurar los valores guardados en config
+                nudConfigMarca.Value  = maxLongitudMarca;
+                nudConfigModelo.Value = maxLongitudModelo;
+                nudConfigSku.Value    = maxLongitudSku;
+            }
+        }
+
+        /// <summary>
+        /// Guarda los valores de los NumericUpDown en App.config
+        /// y actualiza las variables de trabajo.
+        /// </summary>
+        private void btnGuardarConfig_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                GuardarLongitudConfig("MaxLongitudMarca",  (int)nudConfigMarca.Value);
+                GuardarLongitudConfig("MaxLongitudModelo", (int)nudConfigModelo.Value);
+                GuardarLongitudConfig("MaxLongitudSku",    (int)nudConfigSku.Value);
+
+                // Actualizar variables activas
+                maxLongitudMarca  = (int)nudConfigMarca.Value;
+                maxLongitudModelo = (int)nudConfigModelo.Value;
+                maxLongitudSku    = (int)nudConfigSku.Value;
+
+                // Volver al modo solo lectura
+                chkEditarConfig.Checked = false;
+
+                MessageBox.Show(
+                    "Configuración de longitudes guardada correctamente.",
+                    "Configuración guardada",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"No se pudo guardar la configuración: {ex.Message}",
+                    "Error al guardar",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        // ─── Helpers de configuración ───────────────────────────────────────────────
+
+        /// <summary>
+        /// Ruta del archivo de configuración de usuario en LocalApplicationData.
+        /// Se usa en lugar del App.config para evitar problemas de permisos en Program Files.
+        /// </summary>
+        private static readonly string rutaConfigUsuario = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "ImpresionEtiquetas",
+            "config.txt");
+
+        /// <summary>
+        /// Lee una clave entera del archivo de configuración de usuario;
+        /// devuelve <paramref name="defaultValue"/> si la clave no existe o no es un entero positivo.
+        /// </summary>
+        private static int LeerLongitudConfig(string clave, int defaultValue)
+        {
+            if (!File.Exists(rutaConfigUsuario))
+            {
+                return defaultValue;
+            }
+
+            foreach (string linea in File.ReadAllLines(rutaConfigUsuario))
+            {
+                string lineaTrimmed = linea.Trim();
+                if (lineaTrimmed.StartsWith(clave + "=", StringComparison.OrdinalIgnoreCase))
+                {
+                    string valor = lineaTrimmed.Substring(clave.Length + 1);
+                    if (int.TryParse(valor, out int resultado) && resultado > 0)
+                    {
+                        return resultado;
+                    }
+                }
+            }
+
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Escribe (o actualiza) una clave en el archivo de configuración de usuario
+        /// ubicado en LocalApplicationData (siempre tiene permisos de escritura).
+        /// </summary>
+        private static void GuardarLongitudConfig(string clave, int valor)
+        {
+            string directorio = Path.GetDirectoryName(rutaConfigUsuario);
+            if (!Directory.Exists(directorio))
+            {
+                Directory.CreateDirectory(directorio);
+            }
+
+            Dictionary<string, string> config = new Dictionary<string, string>();
+
+            // Leer configuración existente
+            if (File.Exists(rutaConfigUsuario))
+            {
+                foreach (string linea in File.ReadAllLines(rutaConfigUsuario))
+                {
+                    string lineaTrimmed = linea.Trim();
+                    int separador = lineaTrimmed.IndexOf('=');
+                    if (separador > 0)
+                    {
+                        string key = lineaTrimmed.Substring(0, separador);
+                        string val = lineaTrimmed.Substring(separador + 1);
+                        config[key] = val;
+                    }
+                }
+            }
+
+            // Actualizar o agregar la clave
+            config[clave] = valor.ToString();
+
+            // Escribir todo de nuevo
+            var lineas = new List<string>();
+            foreach (var par in config)
+            {
+                lineas.Add(par.Key + "=" + par.Value);
+            }
+            File.WriteAllLines(rutaConfigUsuario, lineas);
+        }
+
+        /// <summary>
+        /// Trunca <paramref name="texto"/> a <paramref name="longitudMaxima"/> caracteres.
+        /// </summary>
+        private static string Truncar(string texto, int longitudMaxima)
+        {
+            if (string.IsNullOrEmpty(texto) || longitudMaxima <= 0 || texto.Length <= longitudMaxima)
+            {
+                return texto ?? string.Empty;
+            }
+            return texto.Substring(0, longitudMaxima);
+        }
+
+        // ─── Resto del formulario (sin cambios) ─────────────────────────────────────
 
         private void btnImportar_Click(object sender, EventArgs e)
         {
@@ -162,19 +352,11 @@ namespace ImpresionEtiquetas
                 {
                     if (row.Cells["Marca"].Value != null)
                     {
-                        string marca = row.Cells["Marca"].Value.ToString();
-                        if (marca.Length > 16)
-                        {
-                            marca = marca.Substring(0, 16);
-                        }
+                        // Aplicar longitudes configuradas (sin hardcoding)
+                        string marca  = Truncar(row.Cells["Marca"].Value.ToString(), maxLongitudMarca);
+                        string modelo = Truncar(row.Cells["Modelo"].Value?.ToString() ?? string.Empty, maxLongitudModelo);
+                        string sku    = Truncar(LimpiarTextoZpl(row.Cells["Sku"].Value?.ToString()), maxLongitudSku);
 
-                        string modelo = row.Cells["Modelo"].Value?.ToString() ?? string.Empty;
-                        if (modelo.Length > 12)
-                        {
-                            modelo = modelo.Substring(0, 12);
-                        }
-
-                        string sku = LimpiarTextoZpl(row.Cells["Sku"].Value?.ToString());
                         // Formatear el precio como moneda
                         if (!TryParsePrecio(row.Cells["Precio"].Value?.ToString(), out decimal precioDecimal))
                         {
@@ -399,7 +581,13 @@ namespace ImpresionEtiquetas
                 return;
             }
 
-            dgvDatos.Rows.Add(TextoMayusculas(marca), TextoMayusculas(modelo), TextoMayusculas(sku), precioTexto, cantidad);
+            dgvDatos.Rows.Add(
+                Truncar(TextoMayusculas(marca),  maxLongitudMarca),
+                Truncar(TextoMayusculas(modelo), maxLongitudModelo),
+                Truncar(TextoMayusculas(sku),    maxLongitudSku),
+                precioTexto,
+                cantidad);
+
             EstablecerModoNormalFila(dgvDatos.Rows.Count - 1);
             LimpiarCamposManual();
             txtMarcaManual.Focus();
@@ -419,10 +607,10 @@ namespace ImpresionEtiquetas
             }
 
             DataGridViewRow row = dgvDatos.SelectedRows[0];
-            row.Cells["Marca"].Value = TextoMayusculas(marca);
-            row.Cells["Modelo"].Value = TextoMayusculas(modelo);
-            row.Cells["Sku"].Value = TextoMayusculas(sku);
-            row.Cells["Precio"].Value = precioTexto;
+            row.Cells["Marca"].Value    = Truncar(TextoMayusculas(marca),  maxLongitudMarca);
+            row.Cells["Modelo"].Value   = Truncar(TextoMayusculas(modelo), maxLongitudModelo);
+            row.Cells["Sku"].Value      = Truncar(TextoMayusculas(sku),    maxLongitudSku);
+            row.Cells["Precio"].Value   = precioTexto;
             row.Cells["Cantidad"].Value = cantidad;
             LimpiarCamposManual();
         }
@@ -872,10 +1060,10 @@ namespace ImpresionEtiquetas
             mensaje = string.Empty;
             DataGridViewRow row = dgvDatos.Rows[rowIndex];
 
-            string marca = row.Cells["Marca"].Value?.ToString();
-            string modelo = row.Cells["Modelo"].Value?.ToString();
-            string sku = row.Cells["Sku"].Value?.ToString();
-            string precio = row.Cells["Precio"].Value?.ToString();
+            string marca    = row.Cells["Marca"].Value?.ToString();
+            string modelo   = row.Cells["Modelo"].Value?.ToString();
+            string sku      = row.Cells["Sku"].Value?.ToString();
+            string precio   = row.Cells["Precio"].Value?.ToString();
             string cantidad = row.Cells["Cantidad"].Value?.ToString();
 
             if (string.IsNullOrWhiteSpace(marca) || string.IsNullOrWhiteSpace(modelo) ||
@@ -898,10 +1086,10 @@ namespace ImpresionEtiquetas
                 return false;
             }
 
-            row.Cells["Marca"].Value = TextoMayusculas(marca);
-            row.Cells["Modelo"].Value = TextoMayusculas(modelo);
-            row.Cells["Sku"].Value = TextoMayusculas(sku);
-            row.Cells["Precio"].Value = precioDecimal.ToString("0.00", CultureInfo.InvariantCulture);
+            row.Cells["Marca"].Value    = Truncar(TextoMayusculas(marca),  maxLongitudMarca);
+            row.Cells["Modelo"].Value   = Truncar(TextoMayusculas(modelo), maxLongitudModelo);
+            row.Cells["Sku"].Value      = Truncar(TextoMayusculas(sku),    maxLongitudSku);
+            row.Cells["Precio"].Value   = precioDecimal.ToString("0.00", CultureInfo.InvariantCulture);
             row.Cells["Cantidad"].Value = cantidadInt;
 
             return true;

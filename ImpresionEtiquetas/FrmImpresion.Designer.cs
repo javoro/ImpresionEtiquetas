@@ -35,6 +35,16 @@
             this.grpEmpresa = new System.Windows.Forms.GroupBox();
             this.lblEmpresa = new System.Windows.Forms.Label();
             this.txtEmpresa = new System.Windows.Forms.TextBox();
+            this.grpConfigLongitud = new System.Windows.Forms.GroupBox();
+            this.chkEditarConfig = new System.Windows.Forms.CheckBox();
+            this.btnGuardarConfig = new System.Windows.Forms.Button();
+            this.lblConfigMaxCaracteres = new System.Windows.Forms.Label();
+            this.lblConfigMarca = new System.Windows.Forms.Label();
+            this.nudConfigMarca = new System.Windows.Forms.NumericUpDown();
+            this.lblConfigModelo = new System.Windows.Forms.Label();
+            this.nudConfigModelo = new System.Windows.Forms.NumericUpDown();
+            this.lblConfigSku = new System.Windows.Forms.Label();
+            this.nudConfigSku = new System.Windows.Forms.NumericUpDown();
             this.grpModo = new System.Windows.Forms.GroupBox();
             this.rdoManual = new System.Windows.Forms.RadioButton();
             this.rdoExcel = new System.Windows.Forms.RadioButton();
@@ -66,6 +76,10 @@
             this.btnImprimirEtiquetas = new System.Windows.Forms.Button();
             this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
             this.grpEmpresa.SuspendLayout();
+            this.grpConfigLongitud.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudConfigMarca)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudConfigModelo)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudConfigSku)).BeginInit();
             this.grpModo.SuspendLayout();
             this.grpManual.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDatos)).BeginInit();
@@ -109,12 +123,143 @@
             this.txtEmpresa.Size = new System.Drawing.Size(1056, 22);
             this.txtEmpresa.TabIndex = 1;
             // 
+            // grpConfigLongitud
+            // 
+            this.grpConfigLongitud.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.grpConfigLongitud.Controls.Add(this.chkEditarConfig);
+            this.grpConfigLongitud.Controls.Add(this.btnGuardarConfig);
+            this.grpConfigLongitud.Controls.Add(this.lblConfigMaxCaracteres);
+            this.grpConfigLongitud.Controls.Add(this.lblConfigMarca);
+            this.grpConfigLongitud.Controls.Add(this.nudConfigMarca);
+            this.grpConfigLongitud.Controls.Add(this.lblConfigModelo);
+            this.grpConfigLongitud.Controls.Add(this.nudConfigModelo);
+            this.grpConfigLongitud.Controls.Add(this.lblConfigSku);
+            this.grpConfigLongitud.Controls.Add(this.nudConfigSku);
+            this.grpConfigLongitud.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.grpConfigLongitud.Location = new System.Drawing.Point(16, 105);
+            this.grpConfigLongitud.Margin = new System.Windows.Forms.Padding(4);
+            this.grpConfigLongitud.Name = "grpConfigLongitud";
+            this.grpConfigLongitud.Padding = new System.Windows.Forms.Padding(4);
+            this.grpConfigLongitud.Size = new System.Drawing.Size(1238, 75);
+            this.grpConfigLongitud.TabIndex = 10;
+            this.grpConfigLongitud.TabStop = false;
+            this.grpConfigLongitud.Text = "Configuración de longitudes de etiqueta";
+            // 
+            // chkEditarConfig
+            // 
+            this.chkEditarConfig.Appearance = System.Windows.Forms.Appearance.Button;
+            this.chkEditarConfig.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.chkEditarConfig.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.chkEditarConfig.Location = new System.Drawing.Point(18, 25);
+            this.chkEditarConfig.Name = "chkEditarConfig";
+            this.chkEditarConfig.Size = new System.Drawing.Size(80, 28);
+            this.chkEditarConfig.TabIndex = 0;
+            this.chkEditarConfig.Text = "✎ Editar";
+            this.chkEditarConfig.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.chkEditarConfig.UseVisualStyleBackColor = true;
+            this.chkEditarConfig.CheckedChanged += new System.EventHandler(this.chkEditarConfig_CheckedChanged);
+            // 
+            // btnGuardarConfig
+            // 
+            this.btnGuardarConfig.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(29)))), ((int)(((byte)(98)))), ((int)(((byte)(59)))));
+            this.btnGuardarConfig.Enabled = false;
+            this.btnGuardarConfig.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnGuardarConfig.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnGuardarConfig.ForeColor = System.Drawing.Color.White;
+            this.btnGuardarConfig.Location = new System.Drawing.Point(601, 25);
+            this.btnGuardarConfig.Name = "btnGuardarConfig";
+            this.btnGuardarConfig.Size = new System.Drawing.Size(130, 28);
+            this.btnGuardarConfig.TabIndex = 8;
+            this.btnGuardarConfig.Text = "💾 Guardar";
+            this.btnGuardarConfig.UseVisualStyleBackColor = false;
+            this.btnGuardarConfig.Click += new System.EventHandler(this.btnGuardarConfig_Click);
+            // 
+            // lblConfigMaxCaracteres
+            // 
+            this.lblConfigMaxCaracteres.AutoSize = true;
+            this.lblConfigMaxCaracteres.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblConfigMaxCaracteres.Location = new System.Drawing.Point(115, 32);
+            this.lblConfigMaxCaracteres.Name = "lblConfigMaxCaracteres";
+            this.lblConfigMaxCaracteres.Size = new System.Drawing.Size(110, 16);
+            this.lblConfigMaxCaracteres.TabIndex = 1;
+            this.lblConfigMaxCaracteres.Text = "Máx. caracteres:";
+            // 
+            // lblConfigMarca
+            // 
+            this.lblConfigMarca.AutoSize = true;
+            this.lblConfigMarca.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblConfigMarca.ForeColor = System.Drawing.Color.FromArgb(80, 80, 80);
+            this.lblConfigMarca.Location = new System.Drawing.Point(238, 32);
+            this.lblConfigMarca.Name = "lblConfigMarca";
+            this.lblConfigMarca.Size = new System.Drawing.Size(44, 15);
+            this.lblConfigMarca.TabIndex = 2;
+            this.lblConfigMarca.Text = "Marca:";
+            // 
+            // nudConfigMarca
+            // 
+            this.nudConfigMarca.Enabled = false;
+            this.nudConfigMarca.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.nudConfigMarca.Location = new System.Drawing.Point(285, 29);
+            this.nudConfigMarca.Maximum = new decimal(new int[] { 200, 0, 0, 0 });
+            this.nudConfigMarca.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.nudConfigMarca.Name = "nudConfigMarca";
+            this.nudConfigMarca.Size = new System.Drawing.Size(58, 22);
+            this.nudConfigMarca.TabIndex = 3;
+            this.nudConfigMarca.Value = new decimal(new int[] { 16, 0, 0, 0 });
+            // 
+            // lblConfigModelo
+            // 
+            this.lblConfigModelo.AutoSize = true;
+            this.lblConfigModelo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblConfigModelo.ForeColor = System.Drawing.Color.FromArgb(80, 80, 80);
+            this.lblConfigModelo.Location = new System.Drawing.Point(360, 32);
+            this.lblConfigModelo.Name = "lblConfigModelo";
+            this.lblConfigModelo.Size = new System.Drawing.Size(50, 15);
+            this.lblConfigModelo.TabIndex = 4;
+            this.lblConfigModelo.Text = "Modelo:";
+            // 
+            // nudConfigModelo
+            // 
+            this.nudConfigModelo.Enabled = false;
+            this.nudConfigModelo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.nudConfigModelo.Location = new System.Drawing.Point(413, 29);
+            this.nudConfigModelo.Maximum = new decimal(new int[] { 200, 0, 0, 0 });
+            this.nudConfigModelo.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.nudConfigModelo.Name = "nudConfigModelo";
+            this.nudConfigModelo.Size = new System.Drawing.Size(58, 22);
+            this.nudConfigModelo.TabIndex = 5;
+            this.nudConfigModelo.Value = new decimal(new int[] { 12, 0, 0, 0 });
+            // 
+            // lblConfigSku
+            // 
+            this.lblConfigSku.AutoSize = true;
+            this.lblConfigSku.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblConfigSku.ForeColor = System.Drawing.Color.FromArgb(80, 80, 80);
+            this.lblConfigSku.Location = new System.Drawing.Point(488, 32);
+            this.lblConfigSku.Name = "lblConfigSku";
+            this.lblConfigSku.Size = new System.Drawing.Size(35, 15);
+            this.lblConfigSku.TabIndex = 6;
+            this.lblConfigSku.Text = "SKU:";
+            // 
+            // nudConfigSku
+            // 
+            this.nudConfigSku.Enabled = false;
+            this.nudConfigSku.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.nudConfigSku.Location = new System.Drawing.Point(526, 29);
+            this.nudConfigSku.Maximum = new decimal(new int[] { 200, 0, 0, 0 });
+            this.nudConfigSku.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.nudConfigSku.Name = "nudConfigSku";
+            this.nudConfigSku.Size = new System.Drawing.Size(58, 22);
+            this.nudConfigSku.TabIndex = 7;
+            this.nudConfigSku.Value = new decimal(new int[] { 20, 0, 0, 0 });
+            // 
             // grpModo
             // 
             this.grpModo.Controls.Add(this.rdoManual);
             this.grpModo.Controls.Add(this.rdoExcel);
             this.grpModo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpModo.Location = new System.Drawing.Point(16, 105);
+            this.grpModo.Location = new System.Drawing.Point(16, 190);
             this.grpModo.Margin = new System.Windows.Forms.Padding(4);
             this.grpModo.Name = "grpModo";
             this.grpModo.Padding = new System.Windows.Forms.Padding(4);
@@ -155,7 +300,7 @@
             this.btnImportar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnImportar.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnImportar.ForeColor = System.Drawing.Color.White;
-            this.btnImportar.Location = new System.Drawing.Point(370, 126);
+            this.btnImportar.Location = new System.Drawing.Point(370, 211);
             this.btnImportar.Margin = new System.Windows.Forms.Padding(4);
             this.btnImportar.Name = "btnImportar";
             this.btnImportar.Size = new System.Drawing.Size(260, 52);
@@ -182,7 +327,7 @@
             this.grpManual.Controls.Add(this.lblMarcaManual);
             this.grpManual.Controls.Add(this.txtMarcaManual);
             this.grpManual.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.grpManual.Location = new System.Drawing.Point(16, 198);
+            this.grpManual.Location = new System.Drawing.Point(16, 283);
             this.grpManual.Margin = new System.Windows.Forms.Padding(4);
             this.grpManual.Name = "grpManual";
             this.grpManual.Padding = new System.Windows.Forms.Padding(4);
@@ -351,7 +496,7 @@
             this.AccionSecundaria});
             dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(255)))));
             this.dgvDatos.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle2;
-            this.dgvDatos.Location = new System.Drawing.Point(16, 300);
+            this.dgvDatos.Location = new System.Drawing.Point(16, 385);
             this.dgvDatos.Margin = new System.Windows.Forms.Padding(4);
             this.dgvDatos.MultiSelect = false;
             this.dgvDatos.Name = "dgvDatos";
@@ -424,7 +569,7 @@
             this.btnImprimir.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnImprimir.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnImprimir.ForeColor = System.Drawing.Color.White;
-            this.btnImprimir.Location = new System.Drawing.Point(16, 670);
+            this.btnImprimir.Location = new System.Drawing.Point(16, 755);
             this.btnImprimir.Margin = new System.Windows.Forms.Padding(4);
             this.btnImprimir.Name = "btnImprimir";
             this.btnImprimir.Size = new System.Drawing.Size(265, 49);
@@ -440,7 +585,7 @@
             this.btnBorrar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnBorrar.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnBorrar.ForeColor = System.Drawing.Color.White;
-            this.btnBorrar.Location = new System.Drawing.Point(1030, 670);
+            this.btnBorrar.Location = new System.Drawing.Point(1030, 755);
             this.btnBorrar.Margin = new System.Windows.Forms.Padding(4);
             this.btnBorrar.Name = "btnBorrar";
             this.btnBorrar.Size = new System.Drawing.Size(224, 49);
@@ -456,7 +601,7 @@
             this.btnImprimirEtiquetas.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnImprimirEtiquetas.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnImprimirEtiquetas.ForeColor = System.Drawing.Color.White;
-            this.btnImprimirEtiquetas.Location = new System.Drawing.Point(289, 670);
+            this.btnImprimirEtiquetas.Location = new System.Drawing.Point(289, 755);
             this.btnImprimirEtiquetas.Margin = new System.Windows.Forms.Padding(4);
             this.btnImprimirEtiquetas.Name = "btnImprimirEtiquetas";
             this.btnImprimirEtiquetas.Size = new System.Drawing.Size(265, 49);
@@ -473,7 +618,8 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1270, 733);
+            this.ClientSize = new System.Drawing.Size(1270, 818);
+            this.Controls.Add(this.grpConfigLongitud);
             this.Controls.Add(this.grpManual);
             this.Controls.Add(this.btnImportar);
             this.Controls.Add(this.grpModo);
@@ -490,6 +636,11 @@
             this.Load += new System.EventHandler(this.frmImprimir_Load);
             this.grpEmpresa.ResumeLayout(false);
             this.grpEmpresa.PerformLayout();
+            this.grpConfigLongitud.ResumeLayout(false);
+            this.grpConfigLongitud.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudConfigMarca)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudConfigModelo)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudConfigSku)).EndInit();
             this.grpModo.ResumeLayout(false);
             this.grpModo.PerformLayout();
             this.grpManual.ResumeLayout(false);
@@ -505,6 +656,16 @@
         private System.Windows.Forms.GroupBox grpEmpresa;
         private System.Windows.Forms.Label lblEmpresa;
         private System.Windows.Forms.TextBox txtEmpresa;
+        private System.Windows.Forms.GroupBox grpConfigLongitud;
+        private System.Windows.Forms.CheckBox chkEditarConfig;
+        private System.Windows.Forms.Button btnGuardarConfig;
+        private System.Windows.Forms.Label lblConfigMaxCaracteres;
+        private System.Windows.Forms.Label lblConfigMarca;
+        private System.Windows.Forms.NumericUpDown nudConfigMarca;
+        private System.Windows.Forms.Label lblConfigModelo;
+        private System.Windows.Forms.NumericUpDown nudConfigModelo;
+        private System.Windows.Forms.Label lblConfigSku;
+        private System.Windows.Forms.NumericUpDown nudConfigSku;
         private System.Windows.Forms.GroupBox grpModo;
         private System.Windows.Forms.RadioButton rdoManual;
         private System.Windows.Forms.RadioButton rdoExcel;
