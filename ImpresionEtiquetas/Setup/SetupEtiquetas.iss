@@ -1,10 +1,10 @@
-; Script de Inno Setup para Impresion de Etiquetas v2.0
+﻿; Script de Inno Setup para Impresion de Etiquetas v2.0
 ; Descarga Inno Setup desde: https://jrsoftware.org/isdl.php
 
 [Setup]
 AppId={{9F6F42FA-28A4-47DE-BD67-E5E2EC64C1F4}
 AppName=Impresion de Etiquetas
-AppVersion=2.1.0.0
+AppVersion=2.2.0.0
 AppPublisher=Javier Orona
 AppCopyright=Copyright © 2025 Javier Orona
 DefaultDirName={autopf}\Impresion de Etiquetas
@@ -49,6 +49,14 @@ Source: "..\bin\Release\System.Drawing.Common.dll"; DestDir: "{app}"; Flags: ign
 Source: "..\bin\Release\System.Memory.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\bin\Release\System.Numerics.Vectors.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\bin\Release\System.Runtime.CompilerServices.Unsafe.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\Microsoft.Bcl.HashCode.dll"; DestDir: "{app}"; Flags: ignoreversion
+
+; Lectura de PDF (PdfPig)
+Source: "..\bin\Release\UglyToad.PdfPig.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\UglyToad.PdfPig.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\UglyToad.PdfPig.Fonts.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\UglyToad.PdfPig.Tokenization.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\UglyToad.PdfPig.Tokens.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Impresion de Etiquetas"; Filename: "{app}\ImpresionEtiquetas.exe"

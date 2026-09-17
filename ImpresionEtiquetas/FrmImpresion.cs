@@ -1549,7 +1549,7 @@ namespace ImpresionEtiquetas
 
         private void menuAcercaDe_Click(object sender, EventArgs e)
         {
-            string version = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "2.1.0.0");
+            string version = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "2.2.0.0");
             MessageBox.Show(this,
                 $"Sistema de Impresión de Etiquetas {version}\n" +
                 "Desarrollado por: Javier Orona\n\n" +
