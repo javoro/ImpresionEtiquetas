@@ -1,4 +1,5 @@
-﻿using OfficeOpenXml;
+﻿using System.Reflection;
+using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -28,7 +29,7 @@ namespace ImpresionEtiquetas
         private Dictionary<string, object> valoresOriginalesFila = new Dictionary<string, object>();
         private const string ColAccionPrincipal = "AccionPrincipal";
         private const string ColAccionSecundaria = "AccionSecundaria";
-        private readonly Color colorFilaEditando = Color.FromArgb(255, 248, 220);
+        private readonly Color colorFilaEditando = Color.FromArgb(254, 249, 195);
 
         // Longitudes máximas activas (se actualizan al guardar la configuración)
         private int maxLongitudMarca;
@@ -58,7 +59,10 @@ namespace ImpresionEtiquetas
             dgvDatos.ReadOnly = false;
             this.WindowState = FormWindowState.Maximized;
             txtEmpresa.CharacterCasing = CharacterCasing.Upper;
-            txtEmpresa.Text = TextoMayusculas("VISUALIZA+");
+            string empresaGuardada = LeerStringConfig("NombreEmpresa", "VISUALIZA+");
+            txtEmpresa.Text = TextoMayusculas(empresaGuardada);
+            txtEmpresa.Leave += txtEmpresa_Leave;
+            this.FormClosing += frmImprimir_FormClosing;
             ConfigurarGridAcciones();
             ConfigurarModo();
             txtPrecioManual.KeyPress += TxtPrecioManual_KeyPress;
@@ -88,13 +92,14 @@ namespace ImpresionEtiquetas
             nudConfigModelo.Value = maxLongitudModelo;
             nudConfigSku.Value    = maxLongitudSku;
 
-            // Asegurar estado inicial deshabilitado
-            nudConfigMarca.Enabled  = false;
-            nudConfigModelo.Enabled = false;
-            nudConfigSku.Enabled    = false;
+            // Asegurar estado inicial deshabilitado para todos los campos configurables
+            txtEmpresa.Enabled       = false;
+            nudConfigMarca.Enabled   = false;
+            nudConfigModelo.Enabled  = false;
+            nudConfigSku.Enabled     = false;
             btnGuardarConfig.Enabled = false;
             chkEditarConfig.Checked  = false;
-            chkEditarConfig.Text = "✎ Editar";
+            chkEditarConfig.Text = "✏️ Editar";
         }
 
         /// <summary>
@@ -104,16 +109,27 @@ namespace ImpresionEtiquetas
         {
             bool editando = chkEditarConfig.Checked;
 
+            txtEmpresa.Enabled       = editando;
             nudConfigMarca.Enabled   = editando;
             nudConfigModelo.Enabled  = editando;
             nudConfigSku.Enabled     = editando;
             btnGuardarConfig.Enabled = editando;
 
-            chkEditarConfig.Text = editando ? "✖ Cancelar" : "✎ Editar";
+            chkEditarConfig.Text = editando ? "✕ Cancelar" : "✏️ Editar";
 
-            if (!editando)
+            if (editando)
+            {
+                txtEmpresa.Focus();
+                txtEmpresa.SelectAll();
+            }
+            else
             {
                 // Al cancelar, restaurar los valores guardados en config
+                string empresaGuardada = LeerStringConfig("NombreEmpresa", "VISUALIZA+");
+                txtEmpresa.Text = TextoMayusculas(empresaGuardada);
+                txtEmpresa.BackColor = Color.White;
+                errorProvider1.SetError(txtEmpresa, "");
+
                 nudConfigMarca.Value  = maxLongitudMarca;
                 nudConfigModelo.Value = maxLongitudModelo;
                 nudConfigSku.Value    = maxLongitudSku;
@@ -128,20 +144,35 @@ namespace ImpresionEtiquetas
         {
             try
             {
+                string empresaNueva = txtEmpresa.Text?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(empresaNueva))
+                {
+                    errorProvider1.SetError(txtEmpresa, "Ingrese el nombre de la empresa.");
+                    txtEmpresa.BackColor = Color.FromArgb(254, 226, 226);
+                    MessageBox.Show("El nombre de la empresa no puede quedar vacío.", "Campo requerido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtEmpresa.Focus();
+                    return;
+                }
+
                 GuardarLongitudConfig("MaxLongitudMarca",  (int)nudConfigMarca.Value);
                 GuardarLongitudConfig("MaxLongitudModelo", (int)nudConfigModelo.Value);
                 GuardarLongitudConfig("MaxLongitudSku",    (int)nudConfigSku.Value);
+                GuardarStringConfig("NombreEmpresa", empresaNueva);
 
                 // Actualizar variables activas
                 maxLongitudMarca  = (int)nudConfigMarca.Value;
                 maxLongitudModelo = (int)nudConfigModelo.Value;
                 maxLongitudSku    = (int)nudConfigSku.Value;
 
+                txtEmpresa.Text = TextoMayusculas(empresaNueva);
+                txtEmpresa.BackColor = Color.White;
+                errorProvider1.SetError(txtEmpresa, "");
+
                 // Volver al modo solo lectura
                 chkEditarConfig.Checked = false;
 
                 MessageBox.Show(
-                    "Configuración de longitudes guardada correctamente.",
+                    "Configuración de etiqueta guardada correctamente.",
                     "Configuración guardada",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -156,7 +187,33 @@ namespace ImpresionEtiquetas
             }
         }
 
-        // ─── Helpers de configuración ───────────────────────────────────────────────
+        // ─── Eventos de persistencia de empresa ────────────────────────────────────────
+
+        private void txtEmpresa_Leave(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(txtEmpresa.Text))
+            {
+                try
+                {
+                    GuardarStringConfig("NombreEmpresa", txtEmpresa.Text.Trim());
+                }
+                catch { }
+            }
+        }
+
+        private void frmImprimir_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(txtEmpresa.Text))
+            {
+                try
+                {
+                    GuardarStringConfig("NombreEmpresa", txtEmpresa.Text.Trim());
+                }
+                catch { }
+            }
+        }
+
+        // ─── Helpers de configuración ────────────────────────────────────────────
 
         /// <summary>
         /// Ruta del archivo de configuración de usuario en LocalApplicationData.
@@ -168,10 +225,10 @@ namespace ImpresionEtiquetas
             "config.txt");
 
         /// <summary>
-        /// Lee una clave entera del archivo de configuración de usuario;
-        /// devuelve <paramref name="defaultValue"/> si la clave no existe o no es un entero positivo.
+        /// Lee una clave de tipo texto del archivo de configuración de usuario en LocalApplicationData.
+        /// Devuelve <paramref name="defaultValue"/> si la clave no existe o está vacía.
         /// </summary>
-        private static int LeerLongitudConfig(string clave, int defaultValue)
+        private static string LeerStringConfig(string clave, string defaultValue)
         {
             if (!File.Exists(rutaConfigUsuario))
             {
@@ -183,10 +240,10 @@ namespace ImpresionEtiquetas
                 string lineaTrimmed = linea.Trim();
                 if (lineaTrimmed.StartsWith(clave + "=", StringComparison.OrdinalIgnoreCase))
                 {
-                    string valor = lineaTrimmed.Substring(clave.Length + 1);
-                    if (int.TryParse(valor, out int resultado) && resultado > 0)
+                    string valor = lineaTrimmed.Substring(clave.Length + 1).Trim();
+                    if (!string.IsNullOrEmpty(valor))
                     {
-                        return resultado;
+                        return valor;
                     }
                 }
             }
@@ -195,10 +252,23 @@ namespace ImpresionEtiquetas
         }
 
         /// <summary>
-        /// Escribe (o actualiza) una clave en el archivo de configuración de usuario
-        /// ubicado en LocalApplicationData (siempre tiene permisos de escritura).
+        /// Lee una clave entera del archivo de configuración de usuario;
+        /// devuelve <paramref name="defaultValue"/> si la clave no existe o no es un entero positivo.
         /// </summary>
-        private static void GuardarLongitudConfig(string clave, int valor)
+        private static int LeerLongitudConfig(string clave, int defaultValue)
+        {
+            string val = LeerStringConfig(clave, null);
+            if (val != null && int.TryParse(val, out int resultado) && resultado > 0)
+            {
+                return resultado;
+            }
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Guarda una clave de tipo texto en el archivo de configuración de usuario en LocalApplicationData.
+        /// </summary>
+        private static void GuardarStringConfig(string clave, string valor)
         {
             string directorio = Path.GetDirectoryName(rutaConfigUsuario);
             if (!Directory.Exists(directorio))
@@ -206,9 +276,8 @@ namespace ImpresionEtiquetas
                 Directory.CreateDirectory(directorio);
             }
 
-            Dictionary<string, string> config = new Dictionary<string, string>();
+            Dictionary<string, string> config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            // Leer configuración existente
             if (File.Exists(rutaConfigUsuario))
             {
                 foreach (string linea in File.ReadAllLines(rutaConfigUsuario))
@@ -217,17 +286,15 @@ namespace ImpresionEtiquetas
                     int separador = lineaTrimmed.IndexOf('=');
                     if (separador > 0)
                     {
-                        string key = lineaTrimmed.Substring(0, separador);
-                        string val = lineaTrimmed.Substring(separador + 1);
+                        string key = lineaTrimmed.Substring(0, separador).Trim();
+                        string val = lineaTrimmed.Substring(separador + 1).Trim();
                         config[key] = val;
                     }
                 }
             }
 
-            // Actualizar o agregar la clave
-            config[clave] = valor.ToString();
+            config[clave] = valor ?? string.Empty;
 
-            // Escribir todo de nuevo
             var lineas = new List<string>();
             foreach (var par in config)
             {
@@ -237,8 +304,14 @@ namespace ImpresionEtiquetas
         }
 
         /// <summary>
-        /// Trunca <paramref name="texto"/> a <paramref name="longitudMaxima"/> caracteres.
+        /// Escribe (o actualiza) una clave entera en el archivo de configuración de usuario
+        /// ubicado en LocalApplicationData.
         /// </summary>
+        private static void GuardarLongitudConfig(string clave, int valor)
+        {
+            GuardarStringConfig(clave, valor.ToString());
+        }
+
         private static string Truncar(string texto, int longitudMaxima)
         {
             if (string.IsNullOrEmpty(texto) || longitudMaxima <= 0 || texto.Length <= longitudMaxima)
@@ -310,6 +383,45 @@ namespace ImpresionEtiquetas
                     {
                         Cursor.Current = previousCursor;
                         btnImportar.Enabled = true;
+                    }
+                }
+            }
+        }
+
+        private void btnImportarPdf_Click(object sender, EventArgs e)
+        {
+            if (!ValidarCamposGenerales())
+            {
+                return;
+            }
+
+            CancelarEdicionActiva();
+
+            using (var frm = new FrmImportarPdf())
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK && frm.ItemsParaImprimir != null && frm.ItemsParaImprimir.Count > 0)
+                {
+                    int agregados = 0;
+                    foreach (var item in frm.ItemsParaImprimir)
+                    {
+                        string marca = Truncar(TextoMayusculas(item.Marca), maxLongitudMarca);
+                        string modelo = Truncar(TextoMayusculas(item.Modelo), maxLongitudModelo);
+                        string sku = Truncar(TextoMayusculas(item.Sku), maxLongitudSku);
+                        string precio = item.Precio.HasValue ? item.Precio.Value.ToString("0.00", CultureInfo.InvariantCulture) : "0.00";
+                        int cantidad = item.Cantidad > 0 ? item.Cantidad : 1;
+
+                        int indiceFila = dgvDatos.Rows.Add(marca, modelo, sku, precio, cantidad);
+                        EstablecerModoNormalFila(indiceFila);
+                        agregados++;
+                    }
+
+                    if (agregados > 0)
+                    {
+                        MessageBox.Show(this,
+                            $"Se transfirieron {agregados} productos desde el PDF a la cola de impresión.",
+                            "Transferencia completada",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
                     }
                 }
             }
@@ -566,6 +678,7 @@ namespace ImpresionEtiquetas
 
             bool esModoExcel = rdoExcel.Checked;
             btnImportar.Enabled = esModoExcel;
+            btnImportarPdf.Enabled = esModoExcel;
             grpManual.Enabled = !esModoExcel;
 
             if (!esModoExcel)
@@ -658,12 +771,17 @@ namespace ImpresionEtiquetas
             if (string.IsNullOrWhiteSpace(txtEmpresa.Text))
             {
                 errorProvider1.SetError(txtEmpresa, "Ingrese el nombre de la empresa.");
-                txtEmpresa.BackColor = Color.MistyRose;
+                txtEmpresa.BackColor = Color.FromArgb(254, 226, 226);
                 valido = false;
             }
             else
             {
                 txtEmpresa.BackColor = Color.White;
+                try
+                {
+                    GuardarStringConfig("NombreEmpresa", txtEmpresa.Text.Trim());
+                }
+                catch { }
             }
 
             if (!valido)
@@ -699,28 +817,28 @@ namespace ImpresionEtiquetas
             if (string.IsNullOrWhiteSpace(marca))
             {
                 errorProvider1.SetError(txtMarcaManual, "Ingrese la marca.");
-                txtMarcaManual.BackColor = Color.MistyRose;
+                txtMarcaManual.BackColor = Color.FromArgb(254, 226, 226);
                 valido = false;
             }
 
             if (string.IsNullOrWhiteSpace(modelo))
             {
                 errorProvider1.SetError(txtModeloManual, "Ingrese el modelo.");
-                txtModeloManual.BackColor = Color.MistyRose;
+                txtModeloManual.BackColor = Color.FromArgb(254, 226, 226);
                 valido = false;
             }
 
             if (string.IsNullOrWhiteSpace(sku))
             {
                 errorProvider1.SetError(txtSkuManual, "Ingrese el SKU.");
-                txtSkuManual.BackColor = Color.MistyRose;
+                txtSkuManual.BackColor = Color.FromArgb(254, 226, 226);
                 valido = false;
             }
 
             if (!TryParsePrecio(precioTexto, out decimal precio) || precio < 0)
             {
                 errorProvider1.SetError(txtPrecioManual, "Ingrese un precio válido.");
-                txtPrecioManual.BackColor = Color.MistyRose;
+                txtPrecioManual.BackColor = Color.FromArgb(254, 226, 226);
                 valido = false;
             }
             else
@@ -731,7 +849,7 @@ namespace ImpresionEtiquetas
             if (!int.TryParse(txtCantidadManual.Text.Trim(), out cantidad) || cantidad < 1)
             {
                 errorProvider1.SetError(txtCantidadManual, "Ingrese una cantidad mayor que cero.");
-                txtCantidadManual.BackColor = Color.MistyRose;
+                txtCantidadManual.BackColor = Color.FromArgb(254, 226, 226);
                 valido = false;
             }
 
@@ -863,21 +981,51 @@ namespace ImpresionEtiquetas
             string nombreColumna = dgvDatos.Columns[e.ColumnIndex].Name;
             bool filaActiva = filaEnEdicion.HasValue && filaEnEdicion.Value == e.RowIndex;
 
-            if (nombreColumna == ColAccionPrincipal)
+            if (filaActiva)
             {
-                DataGridViewCell cell = dgvDatos.Rows[e.RowIndex].Cells[e.ColumnIndex];
-                cell.Style.ForeColor = Color.White;
-                cell.Style.SelectionForeColor = Color.White;
-                cell.Style.BackColor = filaActiva ? Color.FromArgb(46, 125, 50) : Color.FromArgb(255, 193, 7);
-                cell.Style.SelectionBackColor = cell.Style.BackColor;
+                if (nombreColumna == ColAccionPrincipal)
+                {
+                    DataGridViewCell cell = dgvDatos.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                    cell.Style.ForeColor = Color.White;
+                    cell.Style.SelectionForeColor = Color.White;
+                    cell.Style.BackColor = Color.FromArgb(22, 163, 74);
+                    cell.Style.SelectionBackColor = Color.FromArgb(22, 163, 74);
+                }
+                else if (nombreColumna == ColAccionSecundaria)
+                {
+                    DataGridViewCell cell = dgvDatos.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                    cell.Style.ForeColor = Color.White;
+                    cell.Style.SelectionForeColor = Color.White;
+                    cell.Style.BackColor = Color.FromArgb(100, 116, 139);
+                    cell.Style.SelectionBackColor = Color.FromArgb(100, 116, 139);
+                }
+                else
+                {
+                    // High-contrast dark text on warm light amber background
+                    e.CellStyle.BackColor = Color.FromArgb(254, 243, 199);
+                    e.CellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+                    e.CellStyle.SelectionBackColor = Color.FromArgb(253, 230, 138);
+                    e.CellStyle.SelectionForeColor = Color.FromArgb(15, 23, 42);
+                }
             }
-            else if (nombreColumna == ColAccionSecundaria)
+            else
             {
-                DataGridViewCell cell = dgvDatos.Rows[e.RowIndex].Cells[e.ColumnIndex];
-                cell.Style.ForeColor = Color.White;
-                cell.Style.SelectionForeColor = Color.White;
-                cell.Style.BackColor = filaActiva ? Color.FromArgb(117, 117, 117) : Color.FromArgb(198, 40, 40);
-                cell.Style.SelectionBackColor = cell.Style.BackColor;
+                if (nombreColumna == ColAccionPrincipal)
+                {
+                    DataGridViewCell cell = dgvDatos.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                    cell.Style.ForeColor = Color.White;
+                    cell.Style.SelectionForeColor = Color.White;
+                    cell.Style.BackColor = Color.FromArgb(2, 132, 199);
+                    cell.Style.SelectionBackColor = Color.FromArgb(2, 132, 199);
+                }
+                else if (nombreColumna == ColAccionSecundaria)
+                {
+                    DataGridViewCell cell = dgvDatos.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                    cell.Style.ForeColor = Color.White;
+                    cell.Style.SelectionForeColor = Color.White;
+                    cell.Style.BackColor = Color.FromArgb(220, 38, 38);
+                    cell.Style.SelectionBackColor = Color.FromArgb(220, 38, 38);
+                }
             }
         }
 
@@ -908,11 +1056,13 @@ namespace ImpresionEtiquetas
             row.Cells["Precio"].ReadOnly = false;
             row.Cells["Cantidad"].ReadOnly = false;
 
-            row.DefaultCellStyle.BackColor = colorFilaEditando;
-            row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(255, 230, 150);
+            row.DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
+            row.DefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+            row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(253, 230, 138);
+            row.DefaultCellStyle.SelectionForeColor = Color.FromArgb(15, 23, 42);
 
             row.Cells[ColAccionPrincipal].Value = "✓ Confirmar";
-            row.Cells[ColAccionSecundaria].Value = "✗ Cancelar";
+            row.Cells[ColAccionSecundaria].Value = "✕ Cancelar";
 
             dgvDatos.CurrentCell = row.Cells["Marca"];
             dgvDatos.BeginEdit(true);
@@ -980,10 +1130,12 @@ namespace ImpresionEtiquetas
             row.Cells["Cantidad"].ReadOnly = true;
 
             row.DefaultCellStyle.BackColor = Color.Empty;
+            row.DefaultCellStyle.ForeColor = Color.Empty;
             row.DefaultCellStyle.SelectionBackColor = Color.Empty;
+            row.DefaultCellStyle.SelectionForeColor = Color.Empty;
 
-            row.Cells[ColAccionPrincipal].Value = "✎ Editar";
-            row.Cells[ColAccionSecundaria].Value = "🗑 Eliminar";
+            row.Cells[ColAccionPrincipal].Value = "✏️ Editar";
+            row.Cells[ColAccionSecundaria].Value = "🗑️ Eliminar";
 
             filaEnEdicion = null;
             valoresOriginalesFila.Clear();
@@ -1124,10 +1276,12 @@ namespace ImpresionEtiquetas
             row.Cells["Sku"].ReadOnly = true;
             row.Cells["Precio"].ReadOnly = true;
             row.Cells["Cantidad"].ReadOnly = true;
-            row.Cells[ColAccionPrincipal].Value = "✎ Editar";
-            row.Cells[ColAccionSecundaria].Value = "🗑 Eliminar";
+            row.Cells[ColAccionPrincipal].Value = "✏️ Editar";
+            row.Cells[ColAccionSecundaria].Value = "🗑️ Eliminar";
             row.DefaultCellStyle.BackColor = Color.Empty;
+            row.DefaultCellStyle.ForeColor = Color.Empty;
             row.DefaultCellStyle.SelectionBackColor = Color.Empty;
+            row.DefaultCellStyle.SelectionForeColor = Color.Empty;
         }
 
         private static int ObtenerIndiceMayorPlaceholder(string plantilla)
@@ -1342,5 +1496,74 @@ namespace ImpresionEtiquetas
             return normalizado;
         }
 
+        #region Menú de Ayuda
+
+        private void menuGuiaImpresora_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new FrmAyudaImpresora(urlBAT))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        private void menuAbrirImpresoras_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Process.Start("control", "printers");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this,
+                    $"No se pudo abrir el panel de impresoras: {ex.Message}\n\nPuede abrirlo desde Panel de Control > Dispositivos e Impresoras.",
+                    "Dispositivos e Impresoras",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+        }
+
+        private void menuProbarConexion_Click(object sender, EventArgs e)
+        {
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                bool ok = FrmAyudaImpresora.ProbarConexionZDesigner(out string mensaje);
+                if (ok)
+                {
+                    MessageBox.Show(this, mensaje, "Diagnóstico de Impresora", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show(this, mensaje, "Diagnóstico de Impresora", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Error al verificar la conexión: {ex.Message}", "Diagnóstico de Impresora", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+        }
+
+        private void menuAcercaDe_Click(object sender, EventArgs e)
+        {
+            string version = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "2.1.0.0");
+            MessageBox.Show(this,
+                $"Sistema de Impresión de Etiquetas {version}\n" +
+                "Desarrollado por: Javier Orona\n\n" +
+                "• Soporta importación masiva desde Excel (.xlsx)\n" +
+                "• Soporta lectura automática de Catálogos / Facturas PDF\n" +
+                "• Salida directa a impresoras Zebra (ZPL)\n" +
+                "• Canal de impresión por lotes: \\\\localhost\\ZDesigner",
+                "Acerca del Sistema",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
+        #endregion
+
     }
 }
+

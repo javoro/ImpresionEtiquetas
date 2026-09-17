@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-13T18:33:30.000Z",
+  "title": "Design System: Sistema de Impresion de Etiquetas",
+  "extensions": {
+    "colorMeta": {
+      "dispatch-emerald": {
+        "role": "primary",
+        "displayName": "Dispatch Emerald",
+        "canonical": "#15803d",
+        "tonalRamp": ["#052e16", "#14532d", "#166534", "#15803d", "#22c55e", "#4ade80", "#86efac", "#bbf7d0"]
+      },
+      "prep-teal": {
+        "role": "secondary",
+        "displayName": "Prep Teal",
+        "canonical": "#0f766e",
+        "tonalRamp": ["#042f2e", "#134e4a", "#115e59", "#0f766e", "#14b8a6", "#2dd4bf", "#5eead4", "#99f6e4"]
+      },
+      "sapphire-blue": {
+        "role": "tertiary",
+        "displayName": "Sapphire Blue",
+        "canonical": "#2563eb",
+        "tonalRamp": ["#172554", "#1e3a8a", "#1e40af", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe"]
+      },
+      "excel-sky": {
+        "role": "accent",
+        "displayName": "Excel Sky",
+        "canonical": "#0284c7",
+        "tonalRamp": ["#082f49", "#0c4a6e", "#075985", "#0284c7", "#38bdf8", "#7dd3fc", "#bae6fd", "#e0f2fe"]
+      },
+      "danger-crimson": {
+        "role": "danger",
+        "displayName": "Danger Crimson",
+        "canonical": "#dc2626",
+        "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#dc2626", "#ef4444", "#f87171", "#fca5a5", "#fecaca"]
+      },
+      "neutral-bg": {
+        "role": "neutral",
+        "displayName": "Neutral Background",
+        "canonical": "#f8fafc",
+        "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f8fafc"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display / Master Action",
+        "purpose": "Boton de impresion ZPL principal y carga de archivo de importacion."
+      },
+      "title": {
+        "displayName": "Group Header",
+        "purpose": "Encabezados de modulos GroupBox y titulos de secciones operativas."
+      },
+      "body": {
+        "displayName": "Body & Data Grid",
+        "purpose": "Celdas de cuadricula DataGridView y campos interactivos de formulario."
+      },
+      "label": {
+        "displayName": "Field Label",
+        "purpose": "Etiquetas explicativas de campo de texto y controles numericos."
+      },
+      "caption": {
+        "displayName": "Status Caption",
+        "purpose": "Pies de estado, avisos secundarios y contadores de balance."
+      }
+    },
+    "shadows": [
+      {
+        "name": "none",
+        "value": "none",
+        "purpose": "Filosofia Flat & Crisp Layered en escritorio nativo; la jerarquia visual se confiere mediante contraste tonal y bordes suaves de 1px (#e2e8f0)."
+      }
+    ],
+    "motion": [],
+    "components": {
+      "button-dispatch": {
+        "displayName": "Dispatch Button",
+        "category": "button",
+        "description": "Boton principal para envio termico fisico a impresora Zebra o transferencia definitiva.",
+        "html": "<button class='btn-dispatch'>🖨️ Imprimir en Zebra</button>",
+        "css": ".btn-dispatch { background-color: #15803d; color: #ffffff; font-weight: bold; border: none; padding: 8px 20px; font-family: 'Segoe UI', sans-serif; cursor: pointer; }"
+      },
+      "button-prep": {
+        "displayName": "Prep Button",
+        "category": "button",
+        "description": "Boton de preparacion y generacion del archivo de lote ZPL.",
+        "html": "<button class='btn-prep'>🏷️ Generar Etiquetas</button>",
+        "css": ".btn-prep { background-color: #0f766e; color: #ffffff; font-weight: bold; border: none; padding: 8px 20px; font-family: 'Segoe UI', sans-serif; cursor: pointer; }"
+      },
+      "button-pdf": {
+        "displayName": "PDF Integration Button",
+        "category": "button",
+        "description": "Boton de acceso al desfragmentador inteligente de PDF.",
+        "html": "<button class='btn-pdf'>📄 Importar PDF</button>",
+        "css": ".btn-pdf { background-color: #2563eb; color: #ffffff; font-weight: bold; border: none; padding: 8px 18px; font-family: 'Segoe UI', sans-serif; cursor: pointer; }"
+      },
+      "button-excel": {
+        "displayName": "Excel Integration Button",
+        "category": "button",
+        "description": "Boton para operaciones con listas de precios y archivos Excel.",
+        "html": "<button class='btn-excel'>📊 Importar Excel</button>",
+        "css": ".btn-excel { background-color: #0284c7; color: #ffffff; font-weight: bold; border: none; padding: 8px 18px; font-family: 'Segoe UI', sans-serif; cursor: pointer; }"
+      }
+    },
+    "narrative": {
+      "northStar": "The Optical Dispatch Desk",
+      "overview": "The Optical Dispatch Desk encarna la disciplina, exactitud y velocidad de un mostrador de recepcion y despacho optico industrial de alta tecnologia. En este entorno de alta rotacion de mercancia, el operador de bodega no busca ornamentos decorativos ni micro-animaciones distractoras, sino certeza inmediata: codigos de barras legibles al primer escaneo, clasificacion visual instantanea de armazones (modelo, color, medida), sincronizacion estricta con el catalogo oficial de precios y transmision termica infalible a la impresora Zebra.\n\nLa atmosfera visual combina la sobriedad utilitaria de Windows Forms con una jerarquia cromatica basada en propositos operacionales claros. El verde esmeralda industrial senaliza compromiso de hardware y persistencia de datos; el teal profundo rige la preparacion y generacion ZPL; el azul zafiro identifica la inteligencia de extraccion documental de pedidos PDF; y el azul cielo agrupa herramientas de hoja de calculo Excel.",
+      "keyCharacteristics": [
+        "Claridad de alta densidad: Diseno optimizado para cuadriculas de datos extensas con escaneo visual rapido de SKU, descripciones y precios.",
+        "Jerarquia cromatica basada en accion: Cada color de boton comunica el nivel de impacto de la operacion (despacho termico vs. preparacion ZPL vs. analisis documental vs. utileria).",
+        "Respeto a las convenciones de escritorio: Maximo soporte de foco por teclado, atajos de acceso rapido y navegacion fluida por tabulacion.",
+        "Invarianza de escala: Estructura modular en paneles apilados para evitar solapamientos visuales bajo cualquier resolucion estandar de terminal operativa."
+      ],
+      "rules": [
+        {
+          "section": "Colors",
+          "name": "The Dispatch Exclusivity Rule",
+          "rule": "El color verde esmeralda (#15803d) solo puede asignarse a controles que desencadenan una accion irreversible de hardware (impresion termica ZPL) o un traslado definitivo de lote de articulos. Nunca debe emplearse en botones de cancelacion, navegacion o filtros."
+        },
+        {
+          "section": "Colors",
+          "name": "The Contrast Floor Rule",
+          "rule": "Todo texto operativo sobre fondos neutros debe garantizar un ratio de contraste minimo de 4.5:1 para permitir su lectura bajo iluminacion fluorescente o difusa tipica de almacenes."
+        },
+        {
+          "section": "Typography",
+          "name": "The Monospace Alignment Rule",
+          "rule": "Los valores numericos de precio, cantidad y SKU en las columnas del DataGridView deben estar alineados consistentemente a la derecha para facilitar la suma visual vertical."
+        },
+        {
+          "section": "Layout",
+          "name": "The No-Collision Stack Rule",
+          "rule": "Ningun rotulo dinamico de conteo de texto puede compartir la misma linea horizontal que un boton de accion con posicion anclada. Toda barra inferior debe desacoplarse en subpaneles apilados verticalmente para garantizar legibilidad en ventanas de cualquier dimension."
+        },
+        {
+          "section": "Elevation & Depth",
+          "name": "The Flat-By-Default Rule",
+          "rule": "Las superficies de trabajo permanecen totalmente planas en reposo. Los cambios de estado se comunican mediante cambio de color solido de fondo o borde perimetral, nunca por desplazamiento de sombra."
+        }
+      ],
+      "dos": [
+        "Asignar atajos de teclado mnemotecnicos (&Imprimir, &Importar, &Cancelar) a todos los botones principales.",
+        "Formatear todos los precios con el signo de moneda y dos decimales ($#,##0.00).",
+        "Deshabilitar visualmente el boton btnTransferir hasta que se hayan importado datos validos desde el PDF.",
+        "Apilar los paneles de resumen y accion en secciones horizontales independientes para evitar cualquier encimado de elementos."
+      ],
+      "donts": [
+        "Alterar el orden ni los nombres tecnicos de las columnas esperadas por la plantilla ZPL (Empresa, Modelo, Color, Medida, Precio, Codigo).",
+        "Aplicar colores de fondo saturados en las celdas del DataGridView que cansen la vista durante jornadas prolongadas de captura.",
+        "Permitir que el operador imprima si la columna de Modelo o Codigo de Barras excede los limites fisicos calibrados en la configuracion.",
+        "Ocultar errores de conversion de catalogos; advertir explicitamente las filas que carecen de precio antes de permitir la transferencia."
+      ]
+    }
+  }
+}
