@@ -4,7 +4,7 @@
 [Setup]
 AppId={{9F6F42FA-28A4-47DE-BD67-E5E2EC64C1F4}
 AppName=Impresion de Etiquetas
-AppVersion=2.2.0.0
+AppVersion=2.3.0.0
 AppPublisher=Javier Orona
 AppCopyright=Copyright © 2025 Javier Orona
 DefaultDirName={autopf}\Impresion de Etiquetas

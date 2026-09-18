@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Drawing;
@@ -56,6 +57,7 @@ namespace ImpresionEtiquetas.Services
                         {
                             Seleccionado = true,
                             Sku = skuKey,
+                            Upc = raw.Upc.Trim(),
                             Modelo = fragmentos.Modelo.Trim().ToUpperInvariant(),
                             Color = fragmentos.Color.Trim().ToUpperInvariant(),
                             Medida = fragmentos.Medida.Trim(),
@@ -90,31 +92,154 @@ namespace ImpresionEtiquetas.Services
             });
         }
 
+        private static readonly Regex RegexSkuCompleto =
+            new Regex(@"^\d{3,4}[A-Z]{2,3}\d{2,4}", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Posición horizontal (Left) donde inicia cada columna de la tabla del PDF.
+        /// Se detecta leyendo la fila de encabezados; si el PDF no la trae se usan los valores por defecto.
+        /// </summary>
+        private class ColumnasTabla
+        {
+            public const double Tolerancia = 2.0;
+
+            public double Upc = 16.0;
+            public double Codigo = 73.0;
+            public double Descripcion = 130.0;
+            public double Cantidad = 440.0;
+            public double Precio = 497.0;
+
+            public int IndiceColumna(double left)
+            {
+                if (left >= Precio - Tolerancia) return 4;
+                if (left >= Cantidad - Tolerancia) return 3;
+                if (left >= Descripcion - Tolerancia) return 2;
+                if (left >= Codigo - Tolerancia) return 1;
+                return 0;
+            }
+        }
+
         private List<PdfRawRow> ExtraerFilasDePagina(Page page)
         {
             var result = new List<PdfRawRow>();
 
-            // Filtrar palabras de la tabla (descartar cabeceras superiores y pie de página)
-            var words = page.GetWords()
-                .Where(w => w.BoundingBox.Bottom < 700 && w.BoundingBox.Bottom > 45)
+            var lineas = AgruparEnLineas(page.GetWords());
+            if (lineas.Count == 0) return result;
+
+            var columnas = new ColumnasTabla();
+            bool hayEncabezado = lineas.Any(EsLineaEncabezado);
+
+            // Hasta encontrar el encabezado se ignora el bloque superior del documento
+            // (título, fecha, almacén origen/destino). Si el PDF no trae encabezado se procesa todo.
+            bool dentroDeTabla = !hayEncabezado;
+            PdfRawRow filaActual = null;
+
+            Action cerrarFila = () =>
+            {
+                if (filaActual == null) return;
+
+                string sku = filaActual.Sku.Trim();
+                string desc = filaActual.Descripcion.Trim();
+
+                if (!string.IsNullOrWhiteSpace(sku) && (RegexSkuCompleto.IsMatch(sku) || desc.Contains("/")))
+                {
+                    filaActual.Sku = sku.ToUpperInvariant();
+                    filaActual.Descripcion = desc;
+                    result.Add(filaActual);
+                }
+
+                filaActual = null;
+            };
+
+            foreach (var linea in lineas)
+            {
+                if (EsLineaEncabezado(linea))
+                {
+                    cerrarFila();
+                    LeerColumnasDeEncabezado(linea, columnas);
+                    dentroDeTabla = true;
+                    continue;
+                }
+
+                if (!dentroDeTabla) continue;
+
+                if (EsFinDeTabla(linea))
+                {
+                    cerrarFila();
+                    break;
+                }
+
+                string upc = string.Concat(linea.Where(w => columnas.IndiceColumna(w.BoundingBox.Left) == 0).Select(w => w.Text));
+                string codigo = string.Concat(linea.Where(w => columnas.IndiceColumna(w.BoundingBox.Left) == 1).Select(w => w.Text));
+                string desc = string.Join(" ", linea.Where(w => columnas.IndiceColumna(w.BoundingBox.Left) == 2).Select(w => w.Text)).Trim();
+                string cantStr = string.Concat(linea.Where(w => columnas.IndiceColumna(w.BoundingBox.Left) == 3).Select(w => w.Text)).Trim();
+
+                if (upc.Length == 0 && codigo.Length == 0 && desc.Length == 0 && cantStr.Length == 0)
+                    continue;
+
+                bool tieneCantidad = int.TryParse(cantStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int cantidad) && cantidad > 0;
+
+                // Una fila nueva se reconoce porque su CÓDIGO tiene forma de SKU completo, o porque
+                // trae valor en la columna CANTIDAD (que nunca se repite en las líneas de continuación).
+                bool esFilaNueva = (codigo.Length > 0 && RegexSkuCompleto.IsMatch(codigo))
+                                   || (tieneCantidad && (codigo.Length > 0 || desc.Length > 0));
+
+                if (esFilaNueva)
+                {
+                    cerrarFila();
+
+                    filaActual = new PdfRawRow
+                    {
+                        Upc = upc,
+                        Sku = codigo,
+                        Descripcion = desc,
+                        Cantidad = tieneCantidad ? cantidad : 1
+                    };
+                }
+                else if (filaActual != null)
+                {
+                    // Línea de continuación: el PDF cortó la celda por ancho, no es un producto distinto.
+                    // UPC y CÓDIGO se pegan sin separador; la DESCRIPCIÓN se une con un espacio.
+                    filaActual.Upc += upc;
+                    filaActual.Sku += codigo;
+
+                    if (desc.Length > 0)
+                    {
+                        filaActual.Descripcion = (filaActual.Descripcion + " " + desc).Trim();
+                    }
+
+                    if (tieneCantidad) filaActual.Cantidad = cantidad;
+                }
+            }
+
+            cerrarFila();
+
+            return result;
+        }
+
+        /// <summary>
+        /// Agrupa las palabras de la página en líneas visuales usando su coordenada vertical.
+        /// </summary>
+        private static List<List<Word>> AgruparEnLineas(IEnumerable<Word> words)
+        {
+            var lineas = new List<List<Word>>();
+
+            var ordenadas = words
+                .Where(w => !string.IsNullOrWhiteSpace(w.Text))
                 .OrderByDescending(w => w.BoundingBox.Bottom)
                 .ToList();
 
-            if (words.Count == 0) return result;
-
-            // Agrupar palabras por coordenada Y (tolerancia de 6 puntos)
-            var lineas = new List<List<Word>>();
             List<Word> lineaActual = null;
-            double currentY = -1;
+            double currentY = 0;
 
-            foreach (var word in words)
+            foreach (var word in ordenadas)
             {
-                if (currentY < 0)
+                if (lineaActual == null)
                 {
-                    currentY = word.BoundingBox.Bottom;
                     lineaActual = new List<Word> { word };
+                    currentY = word.BoundingBox.Bottom;
                 }
-                else if (Math.Abs(word.BoundingBox.Bottom - currentY) <= 6)
+                else if (Math.Abs(word.BoundingBox.Bottom - currentY) <= 3.0)
                 {
                     lineaActual.Add(word);
                 }
@@ -125,62 +250,68 @@ namespace ImpresionEtiquetas.Services
                     currentY = word.BoundingBox.Bottom;
                 }
             }
+
             if (lineaActual != null && lineaActual.Count > 0)
             {
                 lineas.Add(lineaActual.OrderBy(w => w.BoundingBox.Left).ToList());
             }
 
-            // Procesar líneas agrupadas detectando continuaciones por celdas estrechas
-            for (int i = 0; i < lineas.Count; i++)
+            return lineas;
+        }
+
+        private static bool EsLineaEncabezado(List<Word> linea)
+        {
+            bool codigo = false, descripcion = false;
+
+            foreach (var w in linea)
             {
-                var r = lineas[i];
+                string t = NormalizarTexto(w.Text);
+                if (t == "CODIGO") codigo = true;
+                else if (t == "DESCRIPCION") descripcion = true;
+            }
 
-                var skuWords = r.Where(w => w.BoundingBox.Left >= 65 && w.BoundingBox.Left < 130).ToList();
-                var descWords = r.Where(w => w.BoundingBox.Left >= 125 && w.BoundingBox.Left < 435).ToList();
-                var cantWords = r.Where(w => w.BoundingBox.Left >= 435 && w.BoundingBox.Left < 480).ToList();
+            return codigo && descripcion;
+        }
 
-                string sku = string.Concat(skuWords.Select(w => w.Text));
-                string desc = string.Join(" ", descWords.Select(w => w.Text)).Trim();
-                string cantStr = string.Concat(cantWords.Select(w => w.Text)).Trim();
-
-                // Si la siguiente línea es un remanente/envoltura de SKU/UPC (alrededor de 10 puntos abajo)
-                if (i + 1 < lineas.Count)
+        private static void LeerColumnasDeEncabezado(List<Word> linea, ColumnasTabla columnas)
+        {
+            foreach (var w in linea)
+            {
+                switch (NormalizarTexto(w.Text))
                 {
-                    var sig = lineas[i + 1];
-                    double diffY = r[0].BoundingBox.Bottom - sig[0].BoundingBox.Bottom;
-
-                    // Si la línea siguiente sólo contiene fragmentos de SKU o UPC y está a unos 8-14 puntos abajo
-                    if (diffY >= 6 && diffY <= 15)
-                    {
-                        var sigSkuWords = sig.Where(w => w.BoundingBox.Left >= 65 && w.BoundingBox.Left < 130).ToList();
-                        var sigDescWords = sig.Where(w => w.BoundingBox.Left >= 125 && w.BoundingBox.Left < 435).ToList();
-
-                        if (sigDescWords.Count == 0 && sigSkuWords.Count > 0)
-                        {
-                            sku += string.Concat(sigSkuWords.Select(w => w.Text));
-                            i++; // Consumir línea de continuación
-                        }
-                    }
+                    case "UPC": columnas.Upc = w.BoundingBox.Left; break;
+                    case "CODIGO": columnas.Codigo = w.BoundingBox.Left; break;
+                    case "DESCRIPCION": columnas.Descripcion = w.BoundingBox.Left; break;
+                    case "CANTIDAD": columnas.Cantidad = w.BoundingBox.Left; break;
+                    case "PRECIO": columnas.Precio = w.BoundingBox.Left; break;
                 }
+            }
+        }
 
-                if (!string.IsNullOrWhiteSpace(sku) && (Regex.IsMatch(sku, @"\d{4}[A-Z]{2}\d{3}") || desc.Contains("/")))
+        private static bool EsFinDeTabla(List<Word> linea)
+        {
+            string texto = NormalizarTexto(string.Join(" ", linea.Select(w => w.Text)));
+            return texto.StartsWith("TOTAL")
+                   || texto.StartsWith("OBSERVACIONES")
+                   || texto.Contains("TCPDF");
+        }
+
+        private static string NormalizarTexto(string texto)
+        {
+            if (string.IsNullOrEmpty(texto)) return string.Empty;
+
+            string normalizado = texto.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(normalizado.Length);
+
+            foreach (char c in normalizado)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
                 {
-                    int cantidad = 1;
-                    if (!string.IsNullOrEmpty(cantStr) && int.TryParse(cantStr, out int c) && c > 0)
-                    {
-                        cantidad = c;
-                    }
-
-                    result.Add(new PdfRawRow
-                    {
-                        Sku = sku.Trim().ToUpperInvariant(),
-                        Descripcion = desc,
-                        Cantidad = cantidad
-                    });
+                    sb.Append(c);
                 }
             }
 
-            return result;
+            return sb.ToString().Normalize(NormalizationForm.FormC).Trim().ToUpperInvariant();
         }
 
         private (string Modelo, string Color, string Medida) DesfragmentarDescripcion(string descripcion)
@@ -188,13 +319,29 @@ namespace ImpresionEtiquetas.Services
             if (string.IsNullOrWhiteSpace(descripcion))
                 return (string.Empty, string.Empty, string.Empty);
 
-            var partes = descripcion.Split(new[] { '/' }, StringSplitOptions.None)
+            string limpia = descripcion.Trim();
+
+            // El separador real de la descripción es " / ". Un "/" sin espacios forma parte del dato
+            // (por ejemplo el color "601/71" o "001/87") y no debe partirse.
+            while (limpia.EndsWith("/"))
+            {
+                limpia = limpia.Substring(0, limpia.Length - 1).TrimEnd();
+            }
+
+            var partes = limpia.Split(new[] { " / " }, StringSplitOptions.None)
                 .Select(p => p.Trim())
                 .ToArray();
 
-            string modelo = partes.Length > 0 ? partes[0] : descripcion;
+            if (partes.Length == 1 && limpia.Contains("/"))
+            {
+                partes = limpia.Split(new[] { '/' }, StringSplitOptions.None)
+                    .Select(p => p.Trim())
+                    .ToArray();
+            }
+
+            string modelo = partes.Length > 0 ? partes[0] : limpia;
             string color = partes.Length > 1 ? partes[1] : string.Empty;
-            string medida = partes.Length > 2 ? partes[2] : string.Empty;
+            string medida = partes.Length > 2 ? string.Join(" / ", partes.Skip(2)) : string.Empty;
 
             return (modelo, color, medida);
         }
@@ -225,7 +372,8 @@ namespace ImpresionEtiquetas.Services
                     foreach (var item in items)
                     {
                         ws.Cells[row, 1].Value = item.Sku;
-                        ws.Cells[row, 2].Value = item.Modelo;
+                        // Misma composición que se envía a la cola de impresión: Modelo / Color / Medida
+                        ws.Cells[row, 2].Value = item.ModeloCompleto;
                         ws.Cells[row, 3].Value = item.Color;
                         ws.Cells[row, 4].Value = item.Medida;
                         ws.Cells[row, 5].Value = item.Marca;
@@ -258,8 +406,9 @@ namespace ImpresionEtiquetas.Services
 
         private class PdfRawRow
         {
-            public string Sku { get; set; }
-            public string Descripcion { get; set; }
+            public string Upc { get; set; } = string.Empty;
+            public string Sku { get; set; } = string.Empty;
+            public string Descripcion { get; set; } = string.Empty;
             public int Cantidad { get; set; }
         }
     }

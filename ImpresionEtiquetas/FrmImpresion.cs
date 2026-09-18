@@ -405,7 +405,8 @@ namespace ImpresionEtiquetas
                     foreach (var item in frm.ItemsParaImprimir)
                     {
                         string marca = Truncar(TextoMayusculas(item.Marca), maxLongitudMarca);
-                        string modelo = Truncar(TextoMayusculas(item.Modelo), maxLongitudModelo);
+                        // La columna Modelo recibe la composición "Modelo / Color / Medida" del PDF
+                        string modelo = Truncar(TextoMayusculas(item.ModeloCompleto), maxLongitudModelo);
                         string sku = Truncar(TextoMayusculas(item.Sku), maxLongitudSku);
                         string precio = item.Precio.HasValue ? item.Precio.Value.ToString("0.00", CultureInfo.InvariantCulture) : "0.00";
                         int cantidad = item.Cantidad > 0 ? item.Cantidad : 1;
