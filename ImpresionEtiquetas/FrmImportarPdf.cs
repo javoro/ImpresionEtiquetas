@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
@@ -15,6 +15,7 @@ namespace ImpresionEtiquetas
         private readonly CatalogService _catalogService = new CatalogService();
         private readonly PdfService _pdfService = new PdfService();
         private List<PdfItem> _items = new List<PdfItem>();
+        private ResultadoImportacionPdf _resultado = new ResultadoImportacionPdf();
 
         public List<PdfItem> ItemsParaImprimir { get; private set; } = new List<PdfItem>();
 
@@ -51,16 +52,7 @@ namespace ImpresionEtiquetas
                         {
                             foreach (var item in _items)
                             {
-                                if (_catalogService.IntentarObtener(item.Sku, out var cat))
-                                {
-                                    item.Marca = cat.Marca;
-                                    item.Precio = cat.Precio;
-                                    item.CoincideCatalogo = true;
-                                    if (string.IsNullOrEmpty(item.Modelo) && !string.IsNullOrEmpty(cat.Modelo))
-                                    {
-                                        item.Modelo = cat.Modelo;
-                                    }
-                                }
+                                PdfService.AplicarCatalogo(item, _catalogService);
                             }
                             RefrescarGrid();
                         }
@@ -93,7 +85,9 @@ namespace ImpresionEtiquetas
                     try
                     {
                         lblArchivoPdf.Text = Path.GetFileName(ofd.FileName);
-                        _items = await _pdfService.ParsePdfAsync(ofd.FileName, _catalogService);
+
+                        _resultado = await _pdfService.ParsePdfAsync(ofd.FileName, _catalogService);
+                        _items = _resultado.Items;
 
                         RefrescarGrid();
                         ActualizarResumen();
@@ -101,6 +95,25 @@ namespace ImpresionEtiquetas
                         if (_items.Count == 0)
                         {
                             MessageBox.Show(this, "No se detectaron productos ni filas de tabla en el archivo PDF.", "PDF sin datos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                        else if (_resultado.Formato == FormatoPdf.Desconocido)
+                        {
+                            MessageBox.Show(this,
+                                "No se reconoció el formato de la tabla del PDF. Se leyeron los renglones de todas formas, " +
+                                "pero conviene revisarlos antes de transferirlos.",
+                                "Formato no reconocido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                        else
+                        {
+                            int sinSku = _items.Count(i => i.SkuNoEstandar);
+                            if (sinSku > 0)
+                            {
+                                MessageBox.Show(this,
+                                    $"Se detectaron {sinSku} productos cuyo código no tiene la forma habitual de SKU " +
+                                    "(por ejemplo \"ROSA\" o \"POLAROID OFT\").\n\n" +
+                                    "Están marcados en la tabla porque ese texto es lo que saldría impreso en la etiqueta.",
+                                    "Códigos para revisar", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -148,6 +161,17 @@ namespace ImpresionEtiquetas
                 else
                 {
                     row.Cells["ColEstadoCatalogo"].Style.ForeColor = Color.FromArgb(217, 119, 6);
+                }
+
+                // El codigo no tiene forma de SKU: se importa igual, pero se resalta porque
+                // ese texto es el que acabaria impreso en la etiqueta.
+                if (item.SkuNoEstandar)
+                {
+                    var celdaSku = row.Cells["ColSku"];
+                    celdaSku.Style.BackColor = Color.FromArgb(254, 243, 199);
+                    celdaSku.Style.ForeColor = Color.FromArgb(180, 83, 9);
+                    celdaSku.Style.Font = new Font(dgvPdf.Font, FontStyle.Bold);
+                    celdaSku.ToolTipText = "El codigo no tiene la forma habitual de SKU. Revise el texto antes de imprimir.";
                 }
             }
 
@@ -227,7 +251,11 @@ namespace ImpresionEtiquetas
             int totalSel = _items.Count(i => i.Seleccionado);
             int totalPiezas = _items.Where(i => i.Seleccionado).Sum(i => i.Cantidad);
 
-            lblResumen.Text = $"{totalProds} productos en PDF | {totalSel} seleccionados | {totalPiezas} piezas en total";
+            string prefijo = _resultado.Formato != FormatoPdf.Desconocido
+                ? $"Formato {_resultado.NombreFormato} | "
+                : string.Empty;
+
+            lblResumen.Text = $"{prefijo}{totalProds} productos en PDF | {totalSel} seleccionados | {totalPiezas} piezas en total";
             btnTransferir.Enabled = totalSel > 0;
             btnExportarExcel.Enabled = totalProds > 0;
         }
