@@ -1,5 +1,5 @@
 ﻿; Script de Inno Setup para Impresion de Etiquetas v2.0
-; Descarga Inno Setup desde: https://jrsoftware.org/isdl.php
+; Como compilar este instalador (ruta de ISCC.exe, version, etc.): ver BUILD.md en la raiz del repo.
 
 [Setup]
 AppId={{9F6F42FA-28A4-47DE-BD67-E5E2EC64C1F4}
